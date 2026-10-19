@@ -1,0 +1,20 @@
+name: Validate playable office chapter
+on:
+  pull_request:
+  push:
+    branches: ["feat/**"]
+permissions:
+  contents: read
+jobs:
+  browser-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm test

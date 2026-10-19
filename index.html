@@ -6,101 +6,169 @@
       name="viewport"
       content="width=device-width,initial-scale=1,viewport-fit=cover"
     />
-    <meta name="theme-color" content="#172c36" />
-    <title>豐譽實習探索之旅</title>
-    <script type="module" crossorigin src="/zoy/assets/index-CYJVCgFO.js"></script>
-    <link rel="stylesheet" crossorigin href="/zoy/assets/index-3OrbMum1.css">
+    <meta name="theme-color" content="#233d48" />
+    <title>豐譽實習探索之旅｜第一天・辦公室的線索</title>
+    <script type="module" crossorigin src="/zoy/assets/index-BNE0Uh_R.js"></script>
+    <link rel="modulepreload" crossorigin href="/zoy/assets/controls-CIr2nVqe.js">
+    <link rel="stylesheet" crossorigin href="/zoy/assets/index-Bob-OzJZ.css">
   </head>
   <body>
-    <div id="app">
-      <header>
-        <a class="brand" href="./">豐譽 <span>FENG YU</span></a>
-        <div class="edition">FIELD NOTES / 施工現場實習計畫</div>
-        <button id="help">操作說明 ↗</button>
+    <aside class="desktop-note">
+      <div class="wordmark">豐譽 <span>FENG YU</span></div>
+      <p>AN INTERNSHIP ADVENTURE</p>
+      <h1>每一座建築，<br />從一個好問題開始。</h1>
+      <div class="note-line"></div>
+      <span>CHAPTER 01</span>
+      <h2>辦公室的線索</h2>
+      <p>一份圖說、一個模型，<br />和你第一天的實習筆記。</p>
+      <small
+        >WASD / 方向鍵 移動<br />E / 空白鍵 互動<br />手機使用畫面上的方向控制</small
+      >
+    </aside>
+    <main id="shell">
+      <div id="game"></div>
+      <div class="screen-grain"></div>
+      <header id="hud">
+        <div class="chapter-badge">DAY <b>01</b></div>
+        <div>
+          <span id="area">豐譽工程・入口大廳</span
+          ><small id="clock">09:00 · 初次見面</small>
+        </div>
+        <button id="sound" aria-label="開啟環境音" title="環境音">
+          ♪ <span>OFF</span></button
+        ><button id="menu" aria-label="開啟實習手冊">☰</button>
       </header>
-      <main>
-        <section class="intro">
-          <div>
-            <p class="eyebrow">INTERNSHIP EXPLORER · VOL. 01</p>
-            <h1>每一座建築，<br />都有你的起點<span>。</span></h1>
-            <p class="subtitle">
-              戴上安全帽，走進工程的日常。<br />在現場觀察、與學長姐交流，探索營造工作的真實樣貌。
-            </p>
-          </div>
-          <div class="chapter">
-            <span>01 / 現場探索</span><strong>結構施工樓層</strong
-            ><small>晴 · 上午 09:30 ｜ 地上三層</small>
-          </div>
-        </section>
-        <section class="play">
-          <div class="game-top">
-            <span><i></i> LIVE SITE <b>結構施工樓層 · 3F</b></span
-            ><span id="save-status">進度自動儲存</span>
-          </div>
-          <div id="game-wrap">
-            <div id="game"></div>
-            <div class="location">3F <span>STRUCTURE / 結構工程</span></div>
-            <div id="hint">WASD / 方向鍵移動 · E 互動</div>
-            <div id="touch">
-              <div class="dpad">
-                <button data-dir="up">▲</button
-                ><button data-dir="left">◀</button
-                ><button data-dir="down">▼</button
-                ><button data-dir="right">▶</button>
-              </div>
-              <button id="interact">互動 E</button>
-            </div>
-          </div>
-          <div class="game-bottom">
-            <span>✦ 自由探索 <b>觀察現場，找到你的第一個任務。</b></span
-            ><button id="journal-toggle">實習手冊 ↗</button>
-          </div>
-        </section>
-        <section class="below">
-          <div>
-            <span class="eyebrow">YOUR FIRST DAY</span>
-            <h2>從觀察開始，慢慢成為工程的一份子。</h2>
-          </div>
-          <div id="progress">0 / 4 現場觀察完成</div>
-        </section>
-        <section id="journal">
-          <h3>實習手冊 <small>現場觀察紀錄</small></h3>
-          <div id="journal-items"></div>
-        </section>
-        <footer>
-          豐譽實習探索之旅 <span>PHASE 01–02 · 可玩原型 / 非正式施工指引</span>
-        </footer>
-      </main>
-    </div>
-    <dialog id="welcome">
-      <form id="create">
-        <p class="eyebrow">WELCOME TO THE SITE</p>
-        <h2>你好，新同學。</h2>
-        <p>今天是你的第一天。先讓大家認識你吧。</p>
-        <label
-          >實習生姓名<input
+      <div id="quest-strip">
+        <span class="quest-icon">◇</span>
+        <div>
+          <small id="quest-label">序章 · 第一天</small
+          ><strong id="quest-text">前往 HR 室，找雅涵姐報到</strong>
+        </div>
+        <span id="quest-count"></span>
+      </div>
+      <div id="area-toast" aria-live="polite"></div>
+      <div id="toast" role="status"></div>
+      <div id="prompt">探索辦公室 · 靠近人物或物件互動</div>
+      <div id="controls">
+        <div class="dpad" aria-label="角色移動">
+          <button data-dir="up" aria-label="向上移動">▲</button
+          ><button data-dir="left" aria-label="向左移動">◀</button
+          ><button data-dir="down" aria-label="向下移動">▼</button
+          ><button data-dir="right" aria-label="向右移動">▶</button>
+        </div>
+        <div class="control-right">
+          <small id="save-status">自動記錄實習進度</small
+          ><button id="interact" aria-label="與附近人物或物件互動">
+            <span>互動</span><small>E</small>
+          </button>
+        </div>
+      </div>
+      <section id="title-screen">
+        <div class="title-top">FENG YU · PIXEL ADVENTURE</div>
+        <div class="title-card">
+          <p>THE FIRST DAY</p>
+          <h1>豐譽實習<br /><em>探索之旅</em></h1>
+          <span class="title-line"></span>
+          <h2>第一章・辦公室的線索</h2>
+          <p class="title-description">
+            走進辦公室，遇見學長姐。<br />從一份圖說開始，讀懂建築背後的故事。
+          </p>
+          <button id="continue" class="primary" hidden>繼續實習 →</button
+          ><button id="new-game" class="primary">開始我的第一天 →</button
+          ><small>耳機體驗更佳 · 進度自動保存於此瀏覽器</small>
+        </div>
+        <div class="title-bottom">
+          自由探索 RPG <span>OFFICE CHAPTER · 第一階段</span>
+        </div>
+      </section>
+      <dialog id="name-dialog">
+        <form id="name-form">
+          <p class="eyebrow">NEW INTERN</p>
+          <h2>你的故事，從這裡開始。</h2>
+          <p>識別證上要寫什麼名字呢？</p>
+          <label for="player-name">實習生姓名</label
+          ><input
             id="player-name"
             maxlength="12"
+            placeholder="輸入姓名"
+            autocomplete="nickname"
             required
-            placeholder="輸入你的名字"
-            autocomplete="nickname" /></label
-        ><label
-          >安全帽配色<select id="helmet">
-            <option value="white">經典白</option>
-            <option value="blue">工程藍</option>
-          </select></label
-        ><button class="primary">領取安全帽，進入現場 →</button
-        ><small
-          >WASD / 方向鍵移動，靠近人物或設備按 E。手機使用畫面按鈕。</small
-        >
-      </form>
-    </dialog>
-    <dialog id="conversation">
-      <p id="speaker" class="eyebrow"></p>
-      <h2 id="dialog-title"></h2>
-      <p id="dialog-text"></p>
-      <div id="choices"></div>
-      <button id="next" class="primary">繼續 →</button>
-    </dialog>
+          /><button class="primary">走進豐譽 →</button
+          ><button type="button" id="name-back" class="secondary">返回</button>
+        </form>
+      </dialog>
+      <dialog id="dialogue" aria-labelledby="speaker">
+        <div class="dialogue-top">
+          <canvas
+            id="portrait"
+            width="96"
+            height="112"
+            aria-label="人物立繪"
+          ></canvas>
+          <div>
+            <span id="speaker-role"></span>
+            <h2 id="speaker"></h2>
+            <span class="speaker-rule"></span>
+          </div>
+        </div>
+        <div class="dialogue-content">
+          <h3 id="dialog-title"></h3>
+          <p id="dialog-text"></p>
+        </div>
+        <div class="dialogue-actions">
+          <span id="page-number"></span
+          ><button id="defer" class="secondary" hidden>稍後再來</button
+          ><button id="next" class="primary">繼續 →</button>
+        </div>
+      </dialog>
+      <dialog id="evidence">
+        <div class="evidence-heading">
+          <span id="evidence-code"></span
+          ><button id="evidence-close" aria-label="暫停調查">✕</button>
+        </div>
+        <h2 id="evidence-title"></h2>
+        <p id="evidence-intro"></p>
+        <div id="evidence-art"></div>
+        <p id="evidence-caption"></p>
+        <button id="evidence-action" class="secondary"></button
+        ><button id="record" class="primary" disabled>
+          先操作設備，觀察其中的線索
+        </button>
+      </dialog>
+      <dialog id="journal">
+        <div class="journal-head">
+          <div>
+            <p class="eyebrow">FIELD JOURNAL</p>
+            <h2>我的實習手冊</h2>
+          </div>
+          <button id="journal-close" aria-label="關閉手冊">✕</button>
+        </div>
+        <nav>
+          <button data-tab="tasks" class="selected">任務</button
+          ><button data-tab="bag">背包</button
+          ><button data-tab="map">地圖</button>
+        </nav>
+        <div id="journal-content"></div>
+        <div class="journal-foot">
+          <span id="journal-save"></span
+          ><button id="restart" class="secondary">重新開始</button>
+        </div>
+      </dialog>
+      <dialog id="restart-dialog">
+        <p class="eyebrow">A NEW FIRST DAY</p>
+        <h2>重新開始這段實習？</h2>
+        <p>本版辦公區進度將被清除。舊版施工樓層存檔不受影響。</p>
+        <button id="confirm-restart" class="primary">確認，重新開始</button
+        ><button id="cancel-restart" class="secondary">保留進度</button>
+      </dialog>
+    </main>
+    <aside class="desktop-right">
+      <span>你的第一天，不用急。</span>
+      <p>和人物說話，沿走道探索。<br />任務接取後，才會出現調查提示。</p>
+      <div>01 <b>HR 報到</b></div>
+      <div>02 <b>規劃室的三個線索</b></div>
+      <div>03 <b>帶著發現回來交流</b></div>
+      <small>本章可自由決定調查順序。<br />每個發現都值得留在筆記裡。</small>
+    </aside>
   </body>
 </html>

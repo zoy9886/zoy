@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#172c36" />
+    <title>豐譽實習探索之旅</title>
+    <script type="module" crossorigin src="/zoy/assets/legacy-CpV3dfIY.js"></script>
+    <link rel="modulepreload" crossorigin href="/zoy/assets/controls-CIr2nVqe.js">
+    <link rel="stylesheet" crossorigin href="/zoy/assets/legacy-3OrbMum1.css">
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <a class="brand" href="./">豐譽 <span>FENG YU</span></a>
+        <div class="edition">FIELD NOTES / 施工現場實習計畫</div>
+        <button id="help">操作說明 ↗</button>
+      </header>
+      <main>
+        <section class="intro">
+          <div>
+            <p class="eyebrow">INTERNSHIP EXPLORER · VOL. 01</p>
+            <h1>每一座建築，<br />都有你的起點<span>。</span></h1>
+            <p class="subtitle">
+              戴上安全帽，走進工程的日常。<br />在現場觀察、與學長姐交流，探索營造工作的真實樣貌。
+            </p>
+          </div>
+          <div class="chapter">
+            <span>01 / 現場探索</span><strong>結構施工樓層</strong
+            ><small>晴 · 上午 09:30 ｜ 地上三層</small>
+          </div>
+        </section>
+        <section class="play">
+          <div class="game-top">
+            <span><i></i> LIVE SITE <b>結構施工樓層 · 3F</b></span
+            ><span id="save-status">進度自動儲存</span>
+          </div>
+          <div id="game-wrap">
+            <div id="game"></div>
+            <div class="location">3F <span>STRUCTURE / 結構工程</span></div>
+            <div id="hint">WASD / 方向鍵移動 · E 互動</div>
+            <div id="touch">
+              <div class="dpad">
+                <button data-dir="up">▲</button
+                ><button data-dir="left">◀</button
+                ><button data-dir="down">▼</button
+                ><button data-dir="right">▶</button>
+              </div>
+              <button id="interact">互動 E</button>
+            </div>
+          </div>
+          <div class="game-bottom">
+            <span>✦ 自由探索 <b>觀察現場，找到你的第一個任務。</b></span
+            ><button id="journal-toggle">實習手冊 ↗</button>
+          </div>
+        </section>
+        <section class="below">
+          <div>
+            <span class="eyebrow">YOUR FIRST DAY</span>
+            <h2>從觀察開始，慢慢成為工程的一份子。</h2>
+          </div>
+          <div id="progress">0 / 4 現場觀察完成</div>
+        </section>
+        <section id="journal">
+          <h3>實習手冊 <small>現場觀察紀錄</small></h3>
+          <div id="journal-items"></div>
+        </section>
+        <footer>
+          豐譽實習探索之旅 <span>PHASE 01–02 · 可玩原型 / 非正式施工指引</span>
+        </footer>
+      </main>
+    </div>
+    <dialog id="welcome">
+      <form id="create">
+        <p class="eyebrow">WELCOME TO THE SITE</p>
+        <h2>你好，新同學。</h2>
+        <p>今天是你的第一天。先讓大家認識你吧。</p>
+        <label
+          >實習生姓名<input
+            id="player-name"
+            maxlength="12"
+            required
+            placeholder="輸入你的名字"
+            autocomplete="nickname" /></label
+        ><label
+          >安全帽配色<select id="helmet">
+            <option value="white">經典白</option>
+            <option value="blue">工程藍</option>
+          </select></label
+        ><button class="primary">領取安全帽，進入現場 →</button
+        ><small
+          >WASD / 方向鍵移動，靠近人物或設備按 E。手機使用畫面按鈕。</small
+        >
+      </form>
+    </dialog>
+    <dialog id="conversation">
+      <p id="speaker" class="eyebrow"></p>
+      <h2 id="dialog-title"></h2>
+      <p id="dialog-text"></p>
+      <div id="choices"></div>
+      <button id="next" class="primary">繼續 →</button>
+    </dialog>
+  </body>
+</html>
