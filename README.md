@@ -1,11 +1,33 @@
-# THE FIRST CHAPTER II｜工地冒險日誌
+# 豐譽施工現場 RPG 素材包 v1
 
-這是可在瀏覽器運行的單檔 RPG 原型。
+這是可修改的 **2D 俯視 RPG 測試素材包**，不是透視場景插畫。可在手機直式畫面移動角色，鏡頭跟隨，並根據碰撞盒限制移動。美術屬於第一版原創像素資產，目的是先把正確的遊戲製作流程跑通；尚未達到專業商用遊戲的精緻度。
 
-## GitHub Pages 部署
-1. 建立新的 GitHub repository（避免覆蓋第一版）。
-2. 將 ZIP 解壓縮，**上傳解壓後的 index.html 至 repository 根目錄**。不要直接上傳 ZIP 當網站。
-3. 前往 Settings → Pages，選擇 Deploy from a branch → main → /(root)，儲存。
-4. 等待部署後，使用 GitHub Pages 提供的網址開啟遊戲。
+## 檔案
 
-此版本為可玩原型，美術與任務內容仍可持續完善。
+- `play.html`：可操作手機直式測試頁；方向鍵 / WASD；「互動」按鈕。
+- `construction_map.json`：24 × 36 格地圖、地板編號、物件座標、碰撞盒與角色出生點。
+- `assets/tiles/ground_atlas.png`：8 欄 × 4 列、共 32 種 32×32 地面圖塊。
+- `assets/props/*.png`：14 種獨立透明背景場景部件，可重複放置。
+- `assets/characters/worker_4dir_4frames.png`：角色四方向 × 每方向四格動畫，單格 32×48 px；由上到下為下、左、右、上。
+
+## 如何測試
+
+1. 解壓縮整個資料夾。
+2. 在此資料夾開啟終端機，執行 `python -m http.server 8000`。
+3. 瀏覽器前往 `http://localhost:8000/play.html`。手機若與電腦在同一網路，可使用電腦區網 IP 的 `:8000/play.html` 測試。
+4. 也可以將整個資料夾上傳到 GitHub Pages，再用手機打開 `play.html`。
+
+> 請勿直接雙擊 `play.html` 以 `file://` 開啟；瀏覽器通常會阻擋載入 JSON。
+
+## 匯入現有 RPG
+
+建議先以獨立測試頁驗證移動和碰撞，再把 `assets/`、`construction_map.json` 搬入現有專案。原有遊戲使用自繪 Canvas 場景，**不會在匯入圖片後自動換圖**；需要將地圖繪製改為從圖塊與物件 PNG 載入。
+
+地圖每個 `objects[]` 包含 `sprite`、`x`、`y`、`w`、`h`，以及相對於物件左上角的 `collision:[x,y,w,h]`。你可以直接編輯 JSON 調整位置、通道和碰撞範圍。
+
+## 已知限制
+
+- 素材是程式繪製的第一版像素素材，細節和風格可再逐步提高。
+- 目前只包含施工現場一張可玩地圖；其餘 HR、職安、品管、規劃場景尚未製作成同規格素材包。
+- 物件碰撞盒是初始估值，請依實際遊玩微調。
+- 角色為測試用工地主角，可再換成角色創建系統的不同造型。
