@@ -51,27 +51,72 @@ if(room==='build'){pipes(63,209);pipes(476,204);toolbox(205,368);for(let i=0;i<6
 if(room==='safety'){rail(64,206);rail(426,203);rr(235,345,105,69,'#e3e2cc');rr(240,350,95,17,'#547b7b');text('安全巡檢',288,363,'#f7edd3',13);for(let i=0;i<4;i++){rr(246,376+i*8,66,3,'#91aaa2');rr(317,374+i*8,9,6,i%2?'#d9b45e':'#78a69c')}toolbox(444,359)}
 if(room==='quality'){sample(61,197);sample(469,194);rr(208,353,156,12,'#b2b8ac');rr(215,365,7,43,'#607b7e');rr(352,365,7,43,'#607b7e');for(let i=0;i<4;i++){rr(220+i*34,330,25,20,'#d8d7c8');rr(224+i*34,334,17,12,'#95a9a3')}papers(412,333)}
 }
+
+// Modular 32px construction tiles: base, detail, structures, independent props and foreground.
+function buildTile(x,y,kind){
+const R=(a,b,w,h,c)=>rect(x+a,y+b,w,h,c);
+if(kind==='floor'){R(0,0,32,32,'#89928e');R(0,0,31,1,'#b4bcb4');R(0,1,1,30,'#a9b3ab');R(31,1,1,31,'#606e6e');R(1,31,30,1,'#637474');let v=pixelNoise(x/32,y/32);R(5+(v*17|0),8,5,2,'#6d807e');R(17,22+(v*4|0),7,1,'#a9b4a8');if(v>.62){R(4,24,9,2,'#677775');R(12,22,2,4,'#677775')}}
+if(kind==='walk'){R(0,0,32,32,'#a1a8a0');R(0,0,31,1,'#d3d2bd');R(31,0,1,32,'#747e7b');R(0,31,32,1,'#737d77');R(9,16,14,2,'#d0cdb9')}
+if(kind==='hazard'){R(0,0,32,32,'#777f7c');for(let i=-24;i<50;i+=16){R(i,0,8,8,'#e0ba57');R(i+8,8,8,8,'#263a3f');R(i,16,8,8,'#e0ba57');R(i+8,24,8,8,'#263a3f')}}
+}
+function buildStructuralScene(){
+const R=rect;
+for(let ty=1;ty<14;ty++)for(let tx=1;tx<19;tx++)buildTile(tx*32,ty*32,tx>=7&&tx<=12&&ty>=2&&ty<=12?'walk':'floor');
+for(let y=48;y<430;y+=32){R(38,y,562,1,'#cad0c022')}
+for(let x=35;x<610;x+=32){R(x,36,1,401,'#364b4b1c')}
+// slab-edge guarding at top: posts, mesh, yellow toe-board
+R(36,37,570,8,'#465e66');R(38,45,566,4,'#d0ac57');
+for(let x=44;x<610;x+=27){R(x,38,4,76,'#617d84');R(x+1,39,1,73,'#c5d0c2');R(x+4,53,22,1,'#829a9b');R(x+4,76,22,1,'#829a9b')}
+R(39,112,562,6,'#d5b159');
+// scaffold + formwork, aligned to the original collision rectangles [4,3,7,6]
+let sx=128,sy=96;R(sx+5,sy+5,91,91,'#293c3e66');
+for(let k=0;k<4;k++){R(sx+k*30,sy,5,98,'#6e898c');R(sx+k*30+1,sy,2,97,'#c1cfc4')}
+for(let k=0;k<4;k++){R(sx,sy+k*30,96,5,'#a0b2ae');R(sx,sy+k*30+2,96,1,'#e0d8b8')}
+for(let k=0;k<3;k++){R(sx+12+k*26,sy+11,7,76,'#8a735b');R(sx+15+k*26,sy+11,2,76,'#c7a47a')}
+R(sx+3,sy+90,91,7,'#d5aa5a');
+// material stock area aligned to [13,9,17,11]
+let bx=416,by=288;R(bx+3,by+6,122,63,'#304a4b88');
+for(let k=0;k<5;k++){R(bx+8,by+11+k*10,112,7,'#738e91');R(bx+8,by+12+k*10,112,2,'#b8cbc5');R(bx+9,by+16+k*10,112,2,'#41595c')}
+R(bx+2,by+64,125,7,'#b68c5c');R(bx+9,by+71,10,8,'#6e5c49');R(bx+109,by+71,10,8,'#6e5c49');
+// concrete columns with shadows and rebar protrusions
+for(const [cx,cy] of [[57,145],[560,139],[61,355],[557,355]]){
+R(cx+9,cy+12,34,30,'#263c4055');R(cx,cy,36,34,'#657577');R(cx,cy,32,28,'#aeb8ae');R(cx+3,cy+3,26,22,'#939f9c');R(cx+28,cy+2,5,29,'#52686c');R(cx+3,cy+26,30,5,'#617375');
+for(let k=0;k<3;k++){R(cx+7+k*9,cy-16,3,17,'#5b7277');R(cx+8+k*9,cy-16,1,17,'#bdc8b9')}
+}
+// removable props remain independent of floor tiles
+for(let k=0;k<4;k++){let xx=246+k*35;R(xx,79,28,6,'#7a8b8a');R(xx+3,81,21,2,'#d4d2bd')}
+R(266,347,92,5,'#c0a16e');for(let k=0;k<5;k++){R(270+k*17,352,12,25,'#aa8c64');R(271+k*17,354,9,3,'#d6b889')}
+R(374,176,39,27,'#ba7f4c');R(378,181,31,17,'#dcac5d');R(390,174,13,7,'#5d7274');
+R(229,380,44,27,'#3e646b');R(233,386,36,17,'#d4a65a');R(245,375,12,7,'#7f9796');
+}
+function buildForeground(){
+const R=rect;
+// Foreground-only structural beam: drawn after characters to support depth.
+R(38,26,566,9,'#425b63');R(38,26,566,3,'#91a7a4');
+for(let x=46;x<606;x+=28){R(x,27,3,22,'#6b8588');R(x+1,28,1,18,'#d2d9c8')}
+R(38,47,566,3,'#d1b261');
+}
 function draw(){let m=maps[room],t=Date.now()/1000;rect(0,0,W,H,room==='hub'?'#9d9e81':room==='build'?'#a08b6f':room==='safety'?'#7e9b84':room==='quality'?'#83989a':'#9a9e9b');
 for(let y=0;y<15;y++)for(let x=0;x<20;x++){let q=pixelNoise(x,y),px=x*T,py=y*T;rect(px,py,31,31,q>.6?'#ffffff0a':'#152b2c0b');rect(px+3,py+3,25,1,'#f6e1b319');if(q>.36){rect(px+5+(q*11|0),py+9,4,2,'#293f3939');rect(px+20,py+23,3,2,'#e5d9ac44')}if(room==='hub'&&q>.78){rect(px+8,py+22,5,4,'#527a5a');rect(px+12,py+18,3,6,'#659267')}} 
 for(let x=0;x<20;x++){brickWall(x*T,-13,32,33);brickWall(x*T,H-19,32,39)}for(let y=0;y<15;y++){brickWall(-13,y*T,34,32);brickWall(W-21,y*T,34,32)}
-architecturalFloor();
-m.obstacles.forEach(([x1,y1,x2,y2],i)=>{let x=x1*T,y=y1*T,w=(x2-x1)*T,h=(y2-y1)*T;if(room==='hub'||room==='plan'){rect(x+9,y+12,w-4,h-5,'#1b3d4155');rect(x,y+5,w-7,h-17,'#47716c');rect(x+3,y+2,w-13,8,'#a2b8a2');rect(x+10,y+17,w-27,4,'#243e4b');for(let j=0;j<w-20;j+=24)prop(x+8+j,y+24,'plan')}else{crate(x,y,w,h);for(let j=12;j<w-15;j+=34)rect(x+j,y+9,7,4,'#f6d19a')}})
+if(room==='build')buildStructuralScene();else architecturalFloor();
+if(room!=='build')m.obstacles.forEach(([x1,y1,x2,y2],i)=>{let x=x1*T,y=y1*T,w=(x2-x1)*T,h=(y2-y1)*T;if(room==='hub'||room==='plan'){rect(x+9,y+12,w-4,h-5,'#1b3d4155');rect(x,y+5,w-7,h-17,'#47716c');rect(x+3,y+2,w-13,8,'#a2b8a2');rect(x+10,y+17,w-27,4,'#243e4b');for(let j=0;j<w-20;j+=24)prop(x+8+j,y+24,'plan')}else{crate(x,y,w,h);for(let j=12;j<w-15;j+=34)rect(x+j,y+9,7,4,'#f6d19a')}})
 if(room==='hub'){brickWall(222,152,198,126);rect(233,164,175,87,'#315c61');rect(239,170,163,73,'#467980');rect(245,174,150,7,'#e7c18b');rect(259,188,123,35,'#234d59');text('C & C',320,210,'#f8e4af',24);text('INTERNSHIP',320,235,'#e6e7ca',12);for(let i=0;i<4;i++)foliage(85+i*146,105+(i%2)*18);prop(190,293,'lamp');prop(454,300,'lamp');rect(260,286,116,8,'#dfbf88');rect(267,294,5,26,'#614f40');rect(364,294,5,26,'#614f40');prop(282,254,'plan');prop(355,255,'helmet')}
-if(room==='build'){for(let i=0;i<7;i++){rect(238+i*32,35,7,123,'#d1a15e');rect(236,55+i*12,235,3,'#e6c68d')}rect(441,34,9,225,'#c38e4b');rect(348,54,199,7,'#e1b25f');rect(525,62,4,83,'#5b5448');rect(510,142,33,16,'#d8b368');for(let i=0;i<5;i++)prop(195+i*51,332,'cone');crate(445,270,100,65)}
+if(false&&room==='build'){for(let i=0;i<7;i++){rect(238+i*32,35,7,123,'#d1a15e');rect(236,55+i*12,235,3,'#e6c68d')}rect(441,34,9,225,'#c38e4b');rect(348,54,199,7,'#e1b25f');rect(525,62,4,83,'#5b5448');rect(510,142,33,16,'#d8b368');for(let i=0;i<5;i++)prop(195+i*51,332,'cone');crate(445,270,100,65)}
 if(room==='safety'){for(let i=0;i<5;i++){prop(215+i*43,310,'cone');rect(216+i*43,304,36,5,'#e8cd84')}for(let i=0;i<3;i++)prop(215+i*86,88,'helmet');foliage(94,135);foliage(516,356)}
 if(room==='quality'){for(let i=0;i<4;i++){crate(83+i*105,287,75,45);prop(102+i*105,264,'barrel')}for(let i=0;i<3;i++)prop(270+i*40,108,'plan')}
 if(room==='plan'){for(let i=0;i<3;i++){rect(105+i*147,252,119,72,'#6b7e79');rect(110+i*147,254,109,58,'#d8d7bc');for(let j=0;j<3;j++)rect(118+i*147,264+j*11,67,2,'#82a7a6');prop(152+i*147,268,'plan')}prop(280,125,'lamp')}
 if(room==='hub'||room==='plan'){for(let i=0;i<3;i++){let x=66+i*185;rect(x,70,112,54,'#a67f5c');rect(x+6,75,100,31,'#d8b88e');rect(x+12,79,37,23,'#557b87');rect(x+16,82,29,17,'#91b7bd');rect(x+59,80,32,23,'#e4e4d5');rect(x+63,86,23,2,'#6f9d9c');rect(x+63,94,17,2,'#6f9d9c')}for(let i=0;i<4;i++){let x=70+i*125;rect(x,365,73,61,'#5b7777');for(let j=0;j<3;j++){rect(x+5,372+j*16,63,5,'#c6b18b');rect(x+9,379+j*16,11,7,'#d2a56e');rect(x+26,379+j*16,18,7,'#9cb8ad')}}}
-if(room==='build'){for(let i=0;i<8;i++){rect(68+i*19,85,7,105,'#9eaaab');rect(68+i*19,89,3,96,'#d0d5cb')}for(let i=0;i<4;i++){rect(74+i*30,268,25,59,'#77969d');rect(77+i*30,271,19,54,'#b2c7c1')}for(let i=0;i<4;i++){rect(490+i*29,352,23,28,'#a17c56');rect(493+i*29,355,17,4,'#d7b48a')}}
+if(false&&room==='build'){for(let i=0;i<8;i++){rect(68+i*19,85,7,105,'#9eaaab');rect(68+i*19,89,3,96,'#d0d5cb')}for(let i=0;i<4;i++){rect(74+i*30,268,25,59,'#77969d');rect(77+i*30,271,19,54,'#b2c7c1')}for(let i=0;i<4;i++){rect(490+i*29,352,23,28,'#a17c56');rect(493+i*29,355,17,4,'#d7b48a')}}
 if(room==='safety'){for(let i=0;i<5;i++){rect(64+i*33,76,25,42,'#d5b35d');rect(70+i*33,83,13,12,'#f3e8ce');rect(70+i*33,102,13,4,'#657c7a')}for(let i=0;i<6;i++){rect(214+i*34,222,7,58,'#d7a453');rect(214+i*34,226,31,5,'#f1d68b')}rect(455,337,121,70,'#d7dfd5');text('安全巡查紀錄',515,358,'#385d64',12)}
 if(room==='quality'){for(let i=0;i<5;i++){let x=67+i*100;rect(x,82,72,47,'#7e999b');rect(x+5,88,62,32,'#d7dfd5');rect(x+10,95,42,3,'#719b9d');rect(x+10,106,52,3,'#719b9d')}for(let i=0;i<4;i++){rect(85+i*110,355,60,40,'#acb8b4');rect(91+i*110,362,48,7,'#e4e5d7')}}
 if(room==='plan'){for(let i=0;i<5;i++){rect(85+i*96,275,69,44,'#d7dfd6');rect(90+i*96,280,59,3,'#679d9c');rect(90+i*96,291,44,3,'#679d9c');rect(90+i*96,302,54,3,'#679d9c')}}
-sceneDetail();
+if(room!=='build')sceneDetail();
 m.doors.forEach(d=>{rect(d.x*T+2,d.y*T+1,28,30,'#f6d99755');rect(d.x*T+7,d.y*T+6,18,20,'#f2d18a');text('↔',d.x*T+16,d.y*T+23,'#36515a',18)});
 (m.items||[]).forEach(it=>{prop(it.x*T,it.y*T,room==='safety'?'cone':'plan');if(taskStarted[room])text((room==='safety'?found.has(it.id):planFound.has(it.id))?'✓':'!',it.x*T+16,it.y*T-5,'#f9e1a5',18)});
 m.npcs.forEach(n=>{let np={skin:'peach',hair:'black',shirt:n.type==='hr'?'purple':n.type==='safety'?'yellow':n.type==='quality'?'white':'red',pants:'navy',style:'short'};if(n.type==='cat'){rect(n.x*T+4,n.y*T+13,24,12,'#bd713e');rect(n.x*T+8,n.y*T+5,17,14,'#ec9d4d');rect(n.x*T+8,n.y*T+2,5,8,'#d38a48');rect(n.x*T+20,n.y*T+2,5,8,'#d38a48');rect(n.x*T+11,n.y*T+12,3,3,'#273d3b');rect(n.x*T+20,n.y*T+12,3,3,'#273d3b')}else{rect(n.x*T+6,n.y*T+28,23,5,'#253c4250');char(n.x*T+16,n.y*T+27,np,.8,Math.sin(t*2)*.35)}text(n.label,n.x*T+16,n.y*T-8,'#f4e5b8',11);if(['safety','plan','build','quality'].includes(n.type))interactionMarker(n.x*T+16,n.y*T-23,t)});
 extraCrew().forEach(n=>{let x=n.x*T+16+Math.sin(t*.75+n.id*2.1)*5,y=n.y*T+27+Math.cos(t*.62+n.id)*3;char(x,y,{skin:n.id%3===0?'tan':'peach',hair:n.id%2?'brown':'black',shirt:n.shirt,pants:n.id%2?'black':'navy',style:n.style},.85,Math.sin(t*2+n.id)*.6);rect(x-11,y-32,22,7,n.hat);rect(x-8,y-36,16,5,n.hat);text(n.label,x,y-41,'#f4e5b8',10)});
-rect(player.x*T-12,player.y*T+20,25,6,'#233c414a');char(player.x*T,player.y*T+6,profile,1,player.walk);cinematic();$('hud').innerHTML=`<b>${m.name}</b><br>已完成 ${Object.values(finished).filter(Boolean).length}/4 個組別任務<br>紅色倒三角＝任務角色｜先對話再探索`;
+rect(player.x*T-12,player.y*T+20,25,6,'#233c414a');char(player.x*T,player.y*T+6,profile,1,player.walk);if(room==='build')buildForeground();cinematic();$('hud').innerHTML=`<b>${m.name}</b><br>已完成 ${Object.values(finished).filter(Boolean).length}/4 個組別任務<br>紅色倒三角＝任務角色｜先對話再探索`;
 }
 function blocked(x,y){if(x<.75||x>19.25||y<.75||y>14.25)return true;return maps[room].obstacles.some(([a,b,c,d])=>x>a-.25&&x<c+.2&&y>b-.45&&y<d+.2)}function update(dt){if(modal||dialog)return;let dx=0,dy=0;if(held.has('left')||held.has('a'))dx--;if(held.has('right')||held.has('d'))dx++;if(held.has('up')||held.has('w'))dy--;if(held.has('down')||held.has('s'))dy++;if(dx||dy){let len=Math.hypot(dx,dy),v=Math.min(dt,.04)*3.2;dx=dx/len*v;dy=dy/len*v;if(!blocked(player.x+dx,player.y))player.x+=dx;if(!blocked(player.x,player.y+dy))player.y+=dy;player.walk+=dt*13;player.dir=Math.abs(dx)>Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up'}maps[room].doors.forEach(d=>{if(Math.hypot(player.x-(d.x+.5),player.y-(d.y+.5))<.9){room=d.to;player.x=d.tx;player.y=d.ty;held.clear();$('status').textContent=maps[room].name}})}function loop(now){let dt=last?(now-last)/1000:0;last=now;update(dt);ctx=worldCtx;draw();ctx=screenCtx;const cameraX=Math.max(0,Math.min(W-VIEW_W,player.x*T-VIEW_W/2));screenCtx.clearRect(0,0,360,640);screenCtx.imageSmoothingEnabled=false;screenCtx.drawImage(worldCanvas,Math.round(cameraX),0,VIEW_W,VIEW_H,0,0,360,640);requestAnimationFrame(loop)}function say(who,body,opts=[['繼續',closeDialog]]){dialog=true;$('dialog').style.display='block';$('speaker').textContent=who;$('speech').textContent=body;$('choices').replaceChildren();opts.forEach(([label,fn])=>{let b=document.createElement('button');b.textContent=label;b.onclick=fn;$('choices').appendChild(b)})}function closeDialog(){dialog=false;$('dialog').style.display='none'}function show(html){modal=true;$('panel').innerHTML=html;$('modal').classList.remove('hidden')}function hide(){modal=false;$('modal').classList.add('hidden')}function interact(){if(modal||dialog)return;let m=maps[room],near=m.npcs.filter(n=>Math.hypot(player.x-(n.x+.5),player.y-(n.y+.5))<2).sort((a,b)=>Math.hypot(player.x-a.x,player.y-a.y)-Math.hypot(player.x-b.x,player.y-b.y))[0];if(near){talk(near.type);return}let coworker=extraCrew().filter(n=>Math.hypot(player.x-(n.x+.5),player.y-(n.y+.5))<1.8).sort((a,b)=>Math.hypot(player.x-a.x,player.y-a.y)-Math.hypot(player.x-b.x,player.y-b.y))[0];if(coworker){say(coworker.label,coworker.speech);return}let it=(m.items||[]).find(n=>Math.hypot(player.x-(n.x+.5),player.y-(n.y+.5))<1.7);if(it){if(!taskStarted[room]){say('任務尚未開始',room==='safety'?'請先找職安學長了解巡查任務。':'請先找規劃工程師了解圖面任務。');return}if(room==='safety'){if(!found.has(it.id)){found.add(it.id);say('發現缺失',it.hint+'。已記錄 '+found.size+'/3 處。', [['確認',()=>{closeDialog();if(found.size===3&&!finished.safety){finished.safety=true;scores.safety=100;say('職安學長','全部找到了！安全觀察力滿分，獲得職安徽章。')}}]])}else say('巡查紀錄','這個問題你已經發現過了。')}else if(room==='plan'){planFound.add(it.id);say('圖面比對',it.hint+'。已比對 '+planFound.size+'/3 張。',[['確認',()=>{closeDialog();if(planFound.size===3&&!finished.plan){finished.plan=true;scores.plan=100;say('規劃工程師','三處差異都找到了！獲得規劃徽章。')}}]])}return}say('冒險提示','請先尋找頭上有紅色倒三角的四組任務學長姐；交談後才會顯示任務提示。')}
 function talk(type){if(type==='cat'){cat=true;say('橘色總監','喵！你獲得了隱藏成就：橘貓的認可。');return}if(type==='hr'){if(Object.values(finished).every(Boolean)){showResult();return}say('HR 學姊',`歡迎你，${profile.name}！先從辦公區前往規劃室，再到現場施工區找施工、職安與品管學長姐。你已完成 ${Object.values(finished).filter(Boolean).length} 個任務，全部完成後記得回來找我！`);return}if(type==='safety'){taskStarted.safety=true;say('職安學長',finished.safety?'你已完成巡查任務！':'這個區域有三處安全缺失。走近「!」標記仔細觀察，找到所有問題。');return}if(type==='build'){if(finished.build){say('施工學長','工序挑戰完成，辛苦啦！');return}taskStarted.build=true;say('施工學長','今天要挑戰施工準備順序。先確認圖說，再安排安全措施、人員與材料。準備好了嗎？',[['開始工序挑戰',()=>{closeDialog();order=[];buildTask()}],['稍後再來',closeDialog]]);return}if(type==='quality'){if(finished.quality){say('品管學姊','品質挑戰完成！');return}taskStarted.quality=true;say('品管學姊','這裡要練習材料檢驗與品質判斷。準備好回答三個現場問題了嗎？',[['開始品管挑戰',()=>{closeDialog();question=0;qualityTask()}],['稍後再來',closeDialog]]);return}if(type==='plan'){taskStarted.plan=true;say('規劃工程師',finished.plan?'你已完成圖面比對！':'三張圖面有不同的問題，靠近桌上的「!」標記找出差異。');return}}
