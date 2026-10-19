@@ -16,6 +16,27 @@ function crate(x,y,w,h){rect(x+5,y+8,w,h,'#263c3b55');rect(x,y,w,h-9,'#b77b48');
 function foliage(x,y){rect(x-2,y+11,6,17,'#735a40');for(let k=0;k<5;k++){let xx=x+Math.sin(k*2.7)*13,yy=y+Math.cos(k*2.2)*9;rect(xx-9,yy-7,19,15,k%2?'#416d5e':'#548772');rect(xx-5,yy-7,9,3,'#8cbb8d');rect(xx+4,yy+2,4,4,'#254e49')}}
 function prop(x,y,kind){if(kind==='cone'){rect(x+4,y+25,28,5,'#564d40');rect(x+12,y+4,12,23,'#de854b');rect(x+10,y+18,16,5,'#ffe3aa');rect(x+14,y+7,8,4,'#f6c98c')}else if(kind==='plan'){rect(x+2,y+3,31,25,'#e8ddbd');rect(x+5,y+6,25,2,'#77a1a2');rect(x+5,y+12,15,2,'#77a1a2');rect(x+10,y+18,18,2,'#77a1a2');rect(x+3,y+3,31,2,'#fff5d7')}else if(kind==='barrel'){rect(x+6,y+2,22,28,'#547e7c');rect(x+6,y+5,22,4,'#8db3aa');rect(x+6,y+22,22,4,'#304f58');rect(x+10,y+11,4,9,'#d9c88b')}else if(kind==='lamp'){rect(x+14,y+7,4,24,'#39494a');rect(x+8,y+3,16,7,'#f8dc94');rect(x+4,y+8,25,17,'#ffe4a31c')}else if(kind==='helmet'){rect(x+5,y+13,24,11,'#f0b950');rect(x+8,y+8,18,9,'#ffd77c');rect(x+3,y+22,28,4,'#ad713e')}}
 function cinematic(){const gr=ctx.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#ffe6ad16');gr.addColorStop(.5,'#ffffff00');gr.addColorStop(1,'#182c3c45');ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);for(let i=0;i<10;i++){let x=(i*137+38)%W,y=(i*91+43)%H;rect(x,y,2,2,'#fff5cb45')}}
+function architecturalFloor(){
+const R=(x,y,w,h,c)=>rect(x,y,w,h,c);
+const office=room==='hub'||room==='plan';
+if(office){
+R(30,42,580,390,'#d5d4bc21');
+for(let y=52;y<425;y+=32){R(30,y,580,1,'#f5e7cd32');for(let x=30+(y%64?0:16);x<605;x+=64)R(x,y,1,32,'#657b7640')}
+R(249,41,142,388,'#c9cdb52c');R(257,42,2,385,'#f7e9c43b');R(380,42,2,385,'#f7e9c43b');
+for(let i=0;i<3;i++){R(64+i*191,47,118,4,'#d4ae7355');R(64+i*191,51,118,2,'#fff0ce45')}
+R(275,35,90,14,'#8caeaa66');R(281,35,78,5,'#d5e8d66b');
+}else{
+R(29,31,582,413,'#d5c4a01c');
+for(let i=0;i<10;i++){let x=39+i*59;R(x,36,1,399,'#635d5142');R(x+2,36,1,399,'#e4d3b439')}
+for(let y=47;y<430;y+=59){R(29,y,582,2,'#625c4f32');R(29,y+3,582,1,'#f0d9af28')}
+R(225,42,180,389,'#d2bd8c1c');
+for(let y=62;y<429;y+=31){R(222,y,9,15,'#f2d069');R(222,y+15,9,15,'#343f41');R(397,y,9,15,'#f2d069');R(397,y+15,9,15,'#343f41')}
+for(let x=237;x<393;x+=30)R(x,40,3,2,'#f0ddad');
+if(room==='build'){R(47,189,151,9,'#8b948b');R(47,201,151,3,'#d5d4be');for(let i=0;i<6;i++)R(48+i*26,189,6,16,'#b7c1b5')}
+if(room==='safety'){R(45,269,139,5,'#e2c36d');R(45,276,139,3,'#514d44');for(let i=0;i<5;i++){R(47+i*28,267,7,11,'#dcb456')}}
+if(room==='quality'){R(52,183,147,5,'#7e9b98');R(53,189,147,2,'#e6e7d4');R(446,183,137,5,'#7e9b98')}
+}
+}
 function sceneDetail(){
 const rr=(x,y,w,h,c)=>rect(x,y,w,h,c);
 function machine(x,y){rr(x+3,y+10,61,33,'#263f48');rr(x+7,y+13,53,25,'#789fa4');rr(x+11,y+16,45,18,'#315f68');rr(x+19,y+20,27,2,'#a9d1cb');rr(x+25,y+43,14,4,'#6d8583');rr(x+10,y+48,47,5,'#394d51')}
@@ -33,6 +54,7 @@ if(room==='quality'){sample(61,197);sample(469,194);rr(208,353,156,12,'#b2b8ac')
 function draw(){let m=maps[room],t=Date.now()/1000;rect(0,0,W,H,room==='hub'?'#9d9e81':room==='build'?'#a08b6f':room==='safety'?'#7e9b84':room==='quality'?'#83989a':'#9a9e9b');
 for(let y=0;y<15;y++)for(let x=0;x<20;x++){let q=pixelNoise(x,y),px=x*T,py=y*T;rect(px,py,31,31,q>.6?'#ffffff0a':'#152b2c0b');rect(px+3,py+3,25,1,'#f6e1b319');if(q>.36){rect(px+5+(q*11|0),py+9,4,2,'#293f3939');rect(px+20,py+23,3,2,'#e5d9ac44')}if(room==='hub'&&q>.78){rect(px+8,py+22,5,4,'#527a5a');rect(px+12,py+18,3,6,'#659267')}} 
 for(let x=0;x<20;x++){brickWall(x*T,-13,32,33);brickWall(x*T,H-19,32,39)}for(let y=0;y<15;y++){brickWall(-13,y*T,34,32);brickWall(W-21,y*T,34,32)}
+architecturalFloor();
 m.obstacles.forEach(([x1,y1,x2,y2],i)=>{let x=x1*T,y=y1*T,w=(x2-x1)*T,h=(y2-y1)*T;if(room==='hub'||room==='plan'){rect(x+9,y+12,w-4,h-5,'#1b3d4155');rect(x,y+5,w-7,h-17,'#47716c');rect(x+3,y+2,w-13,8,'#a2b8a2');rect(x+10,y+17,w-27,4,'#243e4b');for(let j=0;j<w-20;j+=24)prop(x+8+j,y+24,'plan')}else{crate(x,y,w,h);for(let j=12;j<w-15;j+=34)rect(x+j,y+9,7,4,'#f6d19a')}})
 if(room==='hub'){brickWall(222,152,198,126);rect(233,164,175,87,'#315c61');rect(239,170,163,73,'#467980');rect(245,174,150,7,'#e7c18b');rect(259,188,123,35,'#234d59');text('C & C',320,210,'#f8e4af',24);text('INTERNSHIP',320,235,'#e6e7ca',12);for(let i=0;i<4;i++)foliage(85+i*146,105+(i%2)*18);prop(190,293,'lamp');prop(454,300,'lamp');rect(260,286,116,8,'#dfbf88');rect(267,294,5,26,'#614f40');rect(364,294,5,26,'#614f40');prop(282,254,'plan');prop(355,255,'helmet')}
 if(room==='build'){for(let i=0;i<7;i++){rect(238+i*32,35,7,123,'#d1a15e');rect(236,55+i*12,235,3,'#e6c68d')}rect(441,34,9,225,'#c38e4b');rect(348,54,199,7,'#e1b25f');rect(525,62,4,83,'#5b5448');rect(510,142,33,16,'#d8b368');for(let i=0;i<5;i++)prop(195+i*51,332,'cone');crate(445,270,100,65)}
