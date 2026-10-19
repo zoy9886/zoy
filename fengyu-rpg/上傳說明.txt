@@ -1,0 +1,8 @@
+本包含原始碼、docs 測試截圖及 dist 正式建置檔。像素素材由 src/art/atlas.ts 於執行時產生，無需額外下載圖片。
+
+最簡單上傳方式：使用另外提供的 fengyu-rpg-deploy.zip，解壓後把 index.html、assets 資料夾與 .nojekyll 放到 zoy 儲存庫根目錄。Settings > Pages > Source 選 Deploy from a branch，Branch 選 main，資料夾選 / (root)，按 Save。
+請先停用現有 Deploy game to GitHub Pages 工作流程（Actions > 該工作流程 > 右上方選單 > Disable workflow），避免兩種部署方式互相覆蓋。
+
+原始碼方式：將本包 fengyu-rpg 資料夾內的專案檔案放到儲存庫根目錄，包含 .github/workflows/deploy.yml；Pages Source 選 GitHub Actions。此方式不用上傳 dist，推送 main 自動建置。
+
+網址為 https://zoy9886.github.io/zoy/ 。這是施工樓層可玩原型，尚非五區域完整版。
