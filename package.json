@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc --noEmit && vite build",
-    "test": "playwright test",
-    "preview": "vite preview --host 0.0.0.0"
+    "build": "tsc --noEmit && vite build && node scripts/publish-static.mjs",
+    "test": "npm run build && playwright test",
+    "preview": "vite preview --host 0.0.0.0",
+    "serve:static": "node scripts/serve-static.mjs"
   },
   "dependencies": {
     "phaser": "^3.90.0"

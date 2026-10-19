@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { SiteScene } from "./world/SiteScene";
 import "./style.css";
 new Phaser.Game({
-  type: Phaser.AUTO,
+  type: Phaser.CANVAS,
   parent: "game",
   backgroundColor: "#344b57",
   pixelArt: true,

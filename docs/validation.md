@@ -15,3 +15,9 @@
 測試以 Linux Chromium 模擬手機視窗及指標輸入，尚未在實體 Android / iPhone、Safari 或 Firefox 驗證。不宣稱 GitHub Pages 已上線；仍需 GitHub 端部署成功。
 
 第一階段基礎流程可玩。第二階段已提供模組化施工樓層、物件配置、碰撞及遮擋，但美術仍為自製原型，並未達成最終精緻素材包。未完成項目與素材缺件見 README。
+
+## 靜態發布修正
+
+首頁原先直接引用 `/src/main.ts`，無法由 GitHub Pages 執行，造成只有 HTML 文字。現將開發入口移至 `client/index.html`，根目錄保存建置後的 HTML、CSS、JavaScript 與 `.nojekyll`。建置時自動更新根目錄；Playwright 改為透過普通靜態伺服器測試根目錄產物。渲染器固定使用 Canvas，避免無 GPU 環境重載時的 WebGL framebuffer 錯誤。
+
+修正後：普通靜態伺服器上的桌面與手機 Playwright 測試 2 項通過；開發模式也確認 Canvas 初始化且沒有 JavaScript 錯誤或資源 HTTP 失敗。

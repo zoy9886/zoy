@@ -13,6 +13,8 @@ npm run build
 npm run preview
 ```
 
+開發用 HTML 已移至 `client/index.html`。根目錄的 `index.html` 與 `assets/` 是可直接由 GitHub Pages 服務的建置產物，執行 `npm run build` 會自動更新；請勿直接編輯產物。
+
 Vite 的 base 固定為 `/zoy/`。開發及預覽時請開啟伺服器的 `/zoy/` 路徑。
 
 ## 操作
@@ -66,6 +68,8 @@ CHROMIUM_PATH=/usr/bin/chromium npm test
 ## GitHub Pages
 
 已提供 `.github/workflows/deploy.yml`，推送 `main` 後會建置並部署。
+
+也支援不用 Actions 的靜態發布：Settings → Pages → Source 選 Deploy from a branch，Branch 選 main，Folder 選 / (root)。根目錄已包含建置後的 HTML、JavaScript、CSS 及 `.nojekyll`。若選此方式，停用自訂 Deploy game to GitHub Pages 工作流程，避免兩種部署方式互相覆蓋。只上傳 `client/index.html` 或 `src` 無法執行遊戲。
 
 1. GitHub 儲存庫 → **Settings → Pages**。
 2. **Build and deployment → Source** 選擇 **GitHub Actions**。

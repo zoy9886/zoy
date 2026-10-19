@@ -89,13 +89,13 @@ test("desktop: exploration, collisions, observations, reward and save", async ({
   await walk(page, "s", 350);
   expect(Math.abs((await state(page)).y - blocked)).toBeLessThan(3);
   await axis(page, 256, 605);
-  await axis(page, 736, 570);
+  await axis(page, 736, 555);
   await interact(page);
   await finish(page);
   expect((await state(page)).seen).toContain("opening");
   await axis(page, 736, 620);
-  await axis(page, 1010, 620);
-  await axis(page, 1010, 551);
+  await axis(page, 1006, 620);
+  await axis(page, 1006, 540);
   await interact(page);
   await finish(page);
   expect((await state(page)).seen).toContain("timber");
