@@ -2,6 +2,9 @@ import Phaser from "phaser";
 import { makeOfficeArt } from "../art/officeArt";
 import { makePeople } from "../art/people";
 import { P } from "../art/palette";
+import { buildConstruction, sitePeople, siteTargets } from "./construction";
+import { SiteStory } from "../systems/siteStory";
+import { SITE_OBJECTIVES, type SiteJob } from "../systems/progress";
 import {
   COLS,
   ROWS,
@@ -28,6 +31,10 @@ export class OfficeScene extends Phaser.Scene {
   private evidence = new EvidenceUI(this.store);
   private audio = new OfficeAudio();
   private journal = new Journal(this.store);
+  private siteStory = new SiteStory(this.store, this.dialogue);
+  private activeTargets = targets;
+  private worldCollider?: Phaser.Physics.Arcade.Collider;
+  private solids?: Phaser.Physics.Arcade.StaticGroup;
   player!: OfficePlayer;
   private blockers: Rect[] = [];
   private markers = new Map<string, Phaser.GameObjects.Container>();
@@ -43,8 +50,174 @@ export class OfficeScene extends Phaser.Scene {
   create() {
     makeOfficeArt(this);
     makePeople(this);
+    this.loadWorld(this.store.state.location);
+    this.scale.on("resize", () =>
+      this.cameras.main.setSize(this.scale.width, this.scale.height),
+    );
+    this.store.onChange = () => this.refresh();
+    this.store.onNotice = (t) => {
+      this.toast(t);
+      this.audio.chime();
+    };
+    this.setupUI();
+    this.refresh();
+    this.refreshMarkers();
+    window.addEventListener("pagehide", () => this.persist());
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        this.touch.directions.clear();
+        this.input.keyboard?.resetKeys();
+        this.persist();
+      }
+    });
+    // Read-only state and geometry: browser tests navigate with real keyboard input.
+    Object.defineProperty(window, "__office", {
+      configurable: true,
+      get: () => ({
+        x: this.player.sprite.x,
+        y: this.player.sprite.y,
+        direction: this.player.direction,
+        area: this.region().id,
+        location: this.store.state.location,
+        state: JSON.parse(JSON.stringify(this.store.state)),
+        blocked: this.blocked(),
+        markers: [...this.markers]
+          .filter(([, m]) => m.visible)
+          .map(([id]) => id),
+        targets: this.activeTargets,
+        blockers: this.blockers.map((r) => ({ ...r })),
+        world:
+          this.store.state.location === "office"
+            ? { width: 1024, height: 1088 }
+            : { width: 1280, height: 928 },
+        camera: {
+          x: this.cameras.main.scrollX,
+          y: this.cameras.main.scrollY,
+          zoom: this.cameras.main.zoom,
+        },
+      }),
+    });
+  }
+  private loadWorld(location: "office" | "site") {
+    this.worldCollider?.destroy();
+    this.solids?.destroy(true);
+    this.tweens.killAll();
+    this.children.removeAll(true);
+    this.blockers = [];
+    this.markers.clear();
+    this.nearest = undefined;
+    this.currentArea = "";
+    this.touch.directions.clear();
+    this.input.keyboard?.resetKeys();
+    this.store.state.location = location;
+    this.activeTargets = location === "site" ? siteTargets : targets;
+    if (location === "office") this.buildOffice();
+    else this.buildSite();
+  }
+  private changeWorld(location: "office" | "site") {
+    this.store.state.x = 512;
+    this.store.state.y = location === "site" ? 752 : 950;
+    this.loadWorld(location);
+    this.store.commit();
+    this.toast(
+      location === "site"
+        ? "已抵達施工樓層 · 先與各組負責人交流"
+        : "已返回辦公區 · 任務進度已保留",
+    );
+  }
+  private region() {
+    return this.store.state.location === "office"
+      ? regionAt(this.player.sprite.x, this.player.sprite.y)
+      : {
+          id: "site",
+          name: "施工現場・3F",
+          subtitle: "沿安全通道探索・保持防護完整",
+        };
+  }
+  private buildSite() {
+    const solids = this.physics.add.staticGroup();
+    this.solids = solids;
+    const block = (r: Rect) => {
+      this.blockers.push(r);
+      const zone = this.add.zone(r.x + r.w / 2, r.y + r.h / 2, r.w, r.h);
+      this.physics.add.existing(zone, true);
+      solids.add(zone);
+    };
+    buildConstruction(this, block);
+    for (const n of sitePeople) {
+      const sprite = this.add
+        .sprite(n.x, n.y, "person-" + n.look + "-helmet", 0)
+        .setOrigin(0.5, 1)
+        .setDepth(n.y);
+      this.tweens.add({
+        targets: sprite,
+        y: n.y - 1,
+        duration: 1500,
+        yoyo: true,
+        repeat: -1,
+      });
+      block({ x: n.x - 8, y: n.y - 11, w: 16, h: 13 });
+      this.add
+        .text(n.x, n.y - 57, n.name, {
+          fontSize: "10px",
+          fontFamily: "sans-serif",
+          color: "#f0ead7",
+          backgroundColor: "#3b5664",
+          padding: { x: 5, y: 3 },
+        })
+        .setOrigin(0.5)
+        .setDepth(n.y + 90);
+      const marker = this.add
+        .container(n.x, n.y - 75, [
+          this.add.triangle(0, 0, 0, 0, 10, 0, 5, 8, 0xd36b69).setOrigin(0.5),
+        ])
+        .setDepth(n.y + 95);
+      this.markers.set(n.id, marker);
+      this.tweens.add({
+        targets: marker,
+        y: n.y - 79,
+        duration: 800,
+        yoyo: true,
+        repeat: -1,
+      });
+    }
+    for (const id of Object.values(SITE_OBJECTIVES).flat()) {
+      const target = this.activeTargets.find((t) => t.id === id)!;
+      const badge = this.badge(target.x, target.y - 83, "!", 0xd4b980);
+      this.markers.set(id, badge);
+    }
+    const s = this.store.state;
+    let x = s.x,
+      y = s.y;
+    if (
+      x < 48 ||
+      x > 1230 ||
+      y < 80 ||
+      y > 876 ||
+      this.blockers.some(
+        (r) =>
+          x + 8 > r.x && x - 8 < r.x + r.w && y - 2 > r.y && y - 12 < r.y + r.h,
+      )
+    ) {
+      x = 512;
+      y = 752;
+    }
+    s.x = x;
+    s.y = y;
+    this.player = new OfficePlayer(this, x, y);
+    this.player.setHelmet(true);
+    this.physics.world.setBounds(32, 64, 1216, 832);
+    this.worldCollider = this.physics.add.collider(this.player.sprite, solids);
+    this.cameras.main
+      .setBounds(-180, -180, 1640, 1288)
+      .setZoom(1.3)
+      .setBackgroundColor("#344e59");
+    this.cameras.main.startFollow(this.player.sprite, true, 0.12, 0.12);
+  }
+  private buildOffice() {
     this.drawFloor();
     const solids = this.physics.add.staticGroup();
+    this.solids = solids;
     const block = (r: Rect) => {
       this.blockers.push(r);
       const zone = this.add.zone(r.x + r.w / 2, r.y + r.h / 2, r.w, r.h);
@@ -123,54 +296,12 @@ export class OfficeScene extends Phaser.Scene {
     this.player = new OfficePlayer(this, x, y);
     this.player.setHelmet(s.hr);
     this.physics.world.setBounds(32, 56, 960, 1000);
-    this.physics.add.collider(this.player.sprite, solids);
+    this.worldCollider = this.physics.add.collider(this.player.sprite, solids);
     this.cameras.main
       .setBounds(-180, -180, COLS * 32 + 360, ROWS * 32 + 360)
       .setZoom(1.3)
       .setBackgroundColor("#344e59");
     this.cameras.main.startFollow(this.player.sprite, true, 0.12, 0.12);
-    this.scale.on("resize", () =>
-      this.cameras.main.setSize(this.scale.width, this.scale.height),
-    );
-    this.store.onChange = () => this.refresh();
-    this.store.onNotice = (t) => {
-      this.toast(t);
-      this.audio.chime();
-    };
-    this.setupUI();
-    this.refresh();
-    this.refreshMarkers();
-    window.addEventListener("pagehide", () => this.persist());
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) {
-        this.touch.directions.clear();
-        this.input.keyboard?.resetKeys();
-        this.persist();
-      }
-    });
-    // Read-only state and geometry: browser tests navigate with real keyboard input.
-    Object.defineProperty(window, "__office", {
-      configurable: true,
-      get: () => ({
-        x: this.player.sprite.x,
-        y: this.player.sprite.y,
-        direction: this.player.direction,
-        area: regionAt(this.player.sprite.x, this.player.sprite.y).id,
-        state: JSON.parse(JSON.stringify(this.store.state)),
-        blocked: this.blocked(),
-        markers: [...this.markers]
-          .filter(([, m]) => m.visible)
-          .map(([id]) => id),
-        targets,
-        blockers: this.blockers.map((r) => ({ ...r })),
-        world: { width: 1024, height: 1088 },
-        camera: {
-          x: this.cameras.main.scrollX,
-          y: this.cameras.main.scrollY,
-          zoom: this.cameras.main.zoom,
-        },
-      }),
-    });
   }
   private drawFloor() {
     const data = Array.from({ length: ROWS }, (_, y) =>
@@ -307,7 +438,7 @@ export class OfficeScene extends Phaser.Scene {
         .setDepth(y + 1);
     }
     this.add
-      .text(512, 1003, "施工通道・下一階段開放", {
+      .text(512, 1003, "施工通道・按互動進入", {
         fontFamily: "sans-serif",
         fontSize: "9px",
         color: "#e5e7d5",
@@ -398,6 +529,7 @@ export class OfficeScene extends Phaser.Scene {
         return;
       }
       this.store.begin(name);
+      this.loadWorld("office");
       this.player.sprite.setPosition(512, 925);
       this.player.setHelmet(false);
       this.title = false;
@@ -448,7 +580,7 @@ export class OfficeScene extends Phaser.Scene {
     const moving = this.player.update(this.touch, blocked);
     if (moving) this.audio.step(time);
     const pos = this.player.sprite;
-    this.nearest = targets
+    this.nearest = this.activeTargets
       .map((t) => ({
         ...t,
         d: Phaser.Math.Distance.Between(t.x, t.y, pos.x, pos.y),
@@ -458,7 +590,7 @@ export class OfficeScene extends Phaser.Scene {
     const prompt = document.querySelector("#prompt")!;
     prompt.textContent = this.nearest
       ? `互動 · ${this.nearest.label}`
-      : "探索辦公室 · 靠近人物或物件互動";
+      : "探索場景 · 靠近人物或物件互動";
     prompt.classList.toggle("near", !!this.nearest);
     document
       .querySelector("#interact")!
@@ -474,7 +606,7 @@ export class OfficeScene extends Phaser.Scene {
       this.touch.directions.clear();
       this.interact(this.nearest.id);
     }
-    const area = regionAt(pos.x, pos.y);
+    const area = this.region();
     if (!this.title && area.id !== this.currentArea) {
       this.currentArea = area.id;
       document.querySelector("#area")!.textContent = "豐譽工程・" + area.name;
@@ -490,6 +622,94 @@ export class OfficeScene extends Phaser.Scene {
     }
   }
   private interact(id: string) {
+    if (id === "exit") {
+      if (this.store.state.hr && this.store.state.planning === "complete")
+        this.dialogue.show(
+          { name: "現場帶領通知", role: "辦公區 → 施工現場", look: "planner" },
+          [
+            {
+              title: "把規劃室的發現帶進現場",
+              text: "請戴好安全帽，沿安全通道移動。先找施工、職安與品管負責人了解巡查範圍，不跨越護欄、不自行操作機具。辦公區隨時可以返回。",
+            },
+          ],
+          () => this.changeWorld("site"),
+          { endLabel: "跟隨帶領，進入施工現場" },
+        );
+      else
+        this.dialogue.show(
+          { name: "通道告示", role: "現場進入須知", look: "intern" },
+          [
+            {
+              title: "先完成報到與規劃任務",
+              text: "請先到 HR 領取識別證與安全帽，並完成規劃室任務及向林以安回報，再從這裡前往施工現場。",
+            },
+          ],
+        );
+      return;
+    }
+    if (this.store.state.location === "site") {
+      if (id === "return-office") {
+        this.dialogue.show(
+          { name: "工務所通道", role: "施工現場 → 辦公區", look: "intern" },
+          [
+            {
+              title: "回辦公區整理今天的筆記",
+              text: "現場任務和背包會保留，也可以再回來繼續探索。三組工作都回報後，記得找雅涵交流今天的收穫。",
+            },
+          ],
+          () => this.changeWorld("office"),
+          { endLabel: "返回辦公區" },
+        );
+        return;
+      }
+      if (sitePeople.some((n) => n.id === id)) {
+        this.siteStory.talk(id);
+        return;
+      }
+      if (this.siteStory.inspect(id)) return;
+      this.dialogue.show(
+        { name: "現場導覽", role: "安全通道與工作分區", look: "intern" },
+        [
+          {
+            title: "先交流，再展開巡查",
+            text: "施工組在中央通道北側、職安人員在入口附近、品管人員在東北工作區。頭上的紅色倒三角是任務 NPC；接取後才會出現目標驚嘆號。南側工務所通道可返回辦公區。",
+          },
+        ],
+      );
+      return;
+    }
+    if (
+      id === "hr" &&
+      Object.values(this.store.state.siteTasks).every(
+        (v) => v === "complete",
+      ) &&
+      !this.store.state.dayComplete
+    ) {
+      this.dialogue.show(
+        { name: "雅涵", role: "第一天・集合交流", look: "hr" },
+        [
+          {
+            title: "今天的工地，有沒有和想像不同？",
+            text: "你從圖說與模型出發，走進施工、職安與品管的工作區，還把觀察交給負責人確認。這些紀錄會成為團隊下一步工作的線索。",
+          },
+          {
+            title: "一棟建築，是大家一起完成的",
+            text: "規劃讓資訊清楚，施工讓想法落地，職安照顧人，品管留下可以追溯的證據。你今天認識的，不只是設備，還有一起把工作做好的夥伴。",
+          },
+          {
+            title: "第一天實習，完成了",
+            text: "把第一天實習紀念章收進背包吧。兩個區域仍可自由往返，任務與觀察也會保存在這個瀏覽器。明天，帶著新的問題再出發。",
+          },
+        ],
+        () => {
+          if (!this.store.state.chapterComplete) this.store.finishChapter();
+          this.store.finishDay();
+        },
+        { endLabel: "收下紀念章，完成第一天" },
+      );
+      return;
+    }
+
     if (npcs.some((n) => n.id === id)) {
       this.story.talk(id);
       return;
@@ -569,7 +789,7 @@ export class OfficeScene extends Phaser.Scene {
         {
           title: "施工現場，需要一起前往",
           text: this.store.state.chapterComplete
-            ? "你已完成辦公室見習。施工、職安與品管的現場任務將在下一階段開放；這裡目前不會切換到未完成的場景。"
+            ? "你已完成辦公室見習。從這裡可以進入施工現場，並隨時返回辦公區。"
             : "通道旁掛著「進入現場請先接受安全告知，並由人員帶領」的標示。先完成報到與規劃室任務，再帶著筆記回到 HR 室。",
         },
       ],
@@ -601,7 +821,17 @@ export class OfficeScene extends Phaser.Scene {
             : !s.chapterComplete
               ? "回到 HR 室，和雅涵交流今天的收穫"
               : "第一章完成・繼續探索辦公室";
-    document.querySelector("#quest-text")!.textContent = text;
+    const siteDone = Object.values(s.siteTasks).every((v) => v === "complete");
+    const fieldHint = s.dayComplete
+      ? "第一天完成・辦公區與施工現場自由往返"
+      : siteDone
+        ? "返回辦公區，找雅涵交流今天的收穫"
+        : s.location === "site"
+          ? "找施工、職安與品管負責人，接取並回報任務"
+          : s.chapterComplete
+            ? "前往大廳南側通道，進入施工現場"
+            : text;
+    document.querySelector("#quest-text")!.textContent = fieldHint;
     document.querySelector("#quest-label")!.textContent = !s.hr
       ? "序章 · 第一天"
       : s.planning === "complete"
@@ -622,9 +852,27 @@ export class OfficeScene extends Phaser.Scene {
       .storageAvailable
       ? "✓ 進度已記錄"
       : "⚠ 無法儲存";
+    if (s.location === "site") {
+      document.querySelector("#quest-label")!.textContent =
+        "第二章・現場的三種視角";
+      document.querySelector("#quest-count")!.textContent =
+        `${Object.values(s.siteTasks).filter((v) => v === "complete").length}/3`;
+    }
     this.refreshMarkers();
   }
   private refreshMarkers() {
+    if (this.store.state.location === "site") {
+      for (const job of Object.keys(SITE_OBJECTIVES) as SiteJob[])
+        for (const id of SITE_OBJECTIVES[job])
+          this.markers
+            .get(id)
+            ?.setVisible(
+              this.store.state.siteTasks[job] === "active" &&
+                !this.store.state.siteSeen.includes(id),
+            );
+      return;
+    }
+
     for (const id of ["blueprint", "computer", "model"] as const)
       this.markers
         .get(id)

@@ -182,7 +182,12 @@ export function regionAt(x: number, y: number) {
 }
 export const targets = props
   .filter((p) => p.name)
-  .map((p) => ({ id: p.id, x: p.x, y: p.y + 22, label: p.name! }))
+  .map((p) => ({
+    id: p.id,
+    x: p.x,
+    y: p.id === "exit" ? 1012 : p.y + 22,
+    label: p.name!,
+  }))
   .concat(
     npcs.map((n) => ({
       id: n.id,

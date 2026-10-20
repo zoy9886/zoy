@@ -1,7 +1,17 @@
 export type EvidenceId = "blueprint" | "computer" | "model";
 export type PlanningStatus =
   "locked" | "available" | "active" | "ready" | "complete";
+export type SiteJob = "construction" | "safety" | "quality";
+export const SITE_OBJECTIVES: Record<SiteJob, string[]> = {
+  construction: ["rebar", "timber", "scaffold"],
+  safety: ["opening", "extinguisher", "lane"],
+  quality: ["quality", "pipe1", "bim"],
+};
 export type Progress = {
+  location: "office" | "site";
+  siteTasks: Record<SiteJob, PlanningStatus>;
+  siteSeen: string[];
+  dayComplete: boolean;
   version: 2;
   name: string;
   x: number;
@@ -17,6 +27,14 @@ export const evidenceIds: EvidenceId[] = ["blueprint", "computer", "model"];
 export function fresh(name = ""): Progress {
   return {
     version: 2,
+    location: "office",
+    siteTasks: {
+      construction: "available",
+      safety: "available",
+      quality: "available",
+    },
+    siteSeen: [],
+    dayComplete: false,
     name,
     x: 512,
     y: 925,
@@ -57,6 +75,39 @@ export function loadProgress(): Progress | null {
     if (["ready", "complete"].includes(s.planning) && s.inspected.length !== 3)
       return null;
     if (s.chapterComplete && s.planning !== "complete") return null;
+    // Additive migration: previously saved office progress and rewards remain intact.
+    s.location ??= "office";
+    s.siteTasks ??= {
+      construction: "available",
+      safety: "available",
+      quality: "available",
+    };
+    s.siteSeen ??= [];
+    s.dayComplete ??= false;
+    if (
+      !["office", "site"].includes(s.location) ||
+      !Array.isArray(s.siteSeen) ||
+      !s.siteSeen.every((id: unknown) => typeof id === "string") ||
+      typeof s.dayComplete !== "boolean"
+    )
+      return null;
+    if (s.location === "site" && (!s.hr || s.planning !== "complete"))
+      return null;
+    for (const [job, ids] of Object.entries(SITE_OBJECTIVES)) {
+      const status = s.siteTasks[job];
+      if (!["available", "active", "ready", "complete"].includes(status))
+        return null;
+      if (
+        ["ready", "complete"].includes(status) &&
+        !ids.every((id) => s.siteSeen.includes(id))
+      )
+        return null;
+    }
+    if (
+      s.dayComplete &&
+      !Object.values(s.siteTasks).every((v) => v === "complete")
+    )
+      return null;
     return s;
   } catch {
     return null;
@@ -114,6 +165,50 @@ export class ProgressStore {
     this.state.items.push("辦公室見習章");
     this.commit();
     this.onNotice("第一章完成 · 辦公室見習章已收進背包");
+  }
+  acceptSite(job: SiteJob) {
+    if (this.state.siteTasks[job] !== "available") return;
+    this.state.siteTasks[job] = "active";
+    this.commit();
+    this.onNotice("現場任務已接取 · 沿安全通道探索");
+  }
+  inspectSite(id: string) {
+    for (const job of Object.keys(SITE_OBJECTIVES) as SiteJob[]) {
+      if (
+        this.state.siteTasks[job] !== "active" ||
+        !SITE_OBJECTIVES[job].includes(id)
+      )
+        continue;
+      if (!this.state.siteSeen.includes(id)) this.state.siteSeen.push(id);
+      if (SITE_OBJECTIVES[job].every((v) => this.state.siteSeen.includes(v)))
+        this.state.siteTasks[job] = "ready";
+      this.commit();
+      this.onNotice("觀察已記錄 · 完成後記得向負責人回報");
+    }
+  }
+  reportSite(job: SiteJob) {
+    if (this.state.siteTasks[job] !== "ready") return;
+    this.state.siteTasks[job] = "complete";
+    this.state.items.push(
+      {
+        construction: "施工觀察紀錄",
+        safety: "職安巡檢紀錄",
+        quality: "品質查驗紀錄",
+      }[job],
+    );
+    this.commit();
+    this.onNotice("現場任務完成 · 紀錄已收進背包");
+  }
+  finishDay() {
+    if (
+      !Object.values(this.state.siteTasks).every((v) => v === "complete") ||
+      this.state.dayComplete
+    )
+      return;
+    this.state.dayComplete = true;
+    this.state.items.push("第一天實習紀念章");
+    this.commit();
+    this.onNotice("第一天實習完成 · 謝謝你帶著好奇走進現場");
   }
   commit() {
     try {

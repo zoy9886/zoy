@@ -32,6 +32,11 @@ async function moveAxis(p: Page, key: "x" | "y", target: number) {
         { intervals: [16], timeout: 15000 },
       )
       .toBe(true);
+  } catch (error) {
+    const now = await read(p);
+    console.log("movement blocked", key, target, now.x, now.y, now.location);
+    await p.screenshot({ path: "/tmp/connected-stuck.png" });
+    throw error;
   } finally {
     await p.keyboard.up(direction);
   }
@@ -46,12 +51,12 @@ async function walkTo(p: Page, id: string) {
   const key = (x: number, y: number) => `${x},${y}`;
   const free = (x: number, y: number) =>
     x >= 48 &&
-    x <= 976 &&
+    x <= g.world.width - 48 &&
     y >= 80 &&
-    y <= 1040 &&
+    y <= g.world.height - 48 &&
     !g.blockers.some(
       (r: any) =>
-        x + 11 > r.x && x - 11 < r.x + r.w && y - 1 > r.y && y - 16 < r.y + r.h,
+        x + 17 > r.x && x - 17 < r.x + r.w && y + 2 > r.y && y - 24 < r.y + r.h,
     );
   const start = [Math.round(g.x / size) * size, Math.round(g.y / size) * size];
   const queue = [start],
@@ -199,6 +204,76 @@ test("office story: check-in, deferred acceptance, investigation gating, report,
   await page.locator("#continue").click();
   expect((await read(page)).state.chapterComplete).toBe(true);
   expect((await read(page)).state.items).toHaveLength(5);
+  await walkTo(page, "exit");
+  await interact(page);
+  await finish(page);
+  expect((await read(page)).location).toBe("site");
+  expect((await read(page)).markers.sort()).toEqual([
+    "construction",
+    "quality-npc",
+    "safety",
+  ]);
+  await page.reload();
+  await page.locator("#continue").click();
+  expect((await read(page)).location).toBe("site");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(300);
+  await page.screenshot({
+    path: "test-results/connected-site-mobile.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  for (const [npc, objectives] of [
+    ["construction", ["rebar", "timber", "scaffold"]],
+    ["safety", ["opening", "extinguisher", "lane"]],
+    ["quality-npc", ["quality", "pipe1", "bim"]],
+  ] as const) {
+    await walkTo(page, npc);
+    await interact(page);
+    await finish(page);
+    const job = npc === "quality-npc" ? "quality" : npc;
+    expect((await read(page)).state.siteTasks[job]).toBe("active");
+    for (const id of objectives) {
+      expect((await read(page)).markers).toContain(id);
+      await walkTo(page, id);
+      await interact(page);
+      await finish(page);
+      expect((await read(page)).state.siteSeen).toContain(id);
+      expect((await read(page)).markers).not.toContain(id);
+    }
+    expect((await read(page)).state.siteTasks[job]).toBe("ready");
+    await walkTo(page, npc);
+    await interact(page);
+    await finish(page);
+    expect((await read(page)).state.siteTasks[job]).toBe("complete");
+  }
+  await walkTo(page, "return-office");
+  await interact(page);
+  await finish(page);
+  expect((await read(page)).location).toBe("office");
+  await walkTo(page, "hr");
+  await interact(page);
+  await finish(page);
+  expect((await read(page)).state.dayComplete).toBe(true);
+  expect((await read(page)).state.items).toContain("第一天實習紀念章");
+  // Re-enter and return once more to catch stale colliders or duplicated handlers.
+  await walkTo(page, "exit");
+  await interact(page);
+  await finish(page);
+  expect((await read(page)).location).toBe("site");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(500);
+  await page.screenshot({
+    path: "test-results/connected-site-mobile.png",
+    fullPage: true,
+  });
+  await walkTo(page, "return-office");
+  await interact(page);
+  await finish(page);
+  expect((await read(page)).location).toBe("office");
+  await page.reload();
+  await page.locator("#continue").click();
+  expect((await read(page)).state.dayComplete).toBe(true);
   expect(errors).toEqual([]);
   expect(failed).toEqual([]);
 });
@@ -278,4 +353,45 @@ test("keyboard dialogue closes once, report gate and legacy chapter remain playa
   await page.locator("#next").click();
   await expect(page.locator("canvas")).toBeVisible();
   expect(await page.evaluate(() => !!(window as any).__site)).toBe(true);
+});
+
+test("migrate completed office save and walk through both portals", async ({
+  page,
+}) => {
+  await page.goto("./");
+  await page.locator("#new-game").waitFor();
+  await page.evaluate(() =>
+    localStorage.setItem(
+      "fengyu-office-v2",
+      JSON.stringify({
+        version: 2,
+        name: "既有實習生",
+        x: 272,
+        y: 272,
+        hr: true,
+        planning: "complete",
+        inspected: ["blueprint", "computer", "model"],
+        items: ["識別證", "安全帽", "實習手冊", "圖說協調便條", "辦公室見習章"],
+        chapterComplete: true,
+      }),
+    ),
+  );
+  await page.reload();
+  await page.locator("#continue").click();
+  expect((await read(page)).state.items).toHaveLength(5);
+  expect((await read(page)).location).toBe("office");
+  await walkTo(page, "exit");
+  await interact(page);
+  await finish(page);
+  expect((await read(page)).location).toBe("site");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(500);
+  await page.screenshot({
+    path: "test-results/connected-site-mobile.png",
+    fullPage: true,
+  });
+  await walkTo(page, "return-office");
+  await interact(page);
+  await finish(page);
+  expect((await read(page)).location).toBe("office");
 });

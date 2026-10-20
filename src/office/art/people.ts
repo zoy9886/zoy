@@ -147,7 +147,7 @@ function character(
 }
 export function makePeople(scene: Phaser.Scene) {
   for (const look of Object.keys(styles) as Look[]) {
-    for (const helmet of look === "intern" ? [false, true] : [false]) {
+    for (const helmet of [false, true]) {
       const key = `person-${look}${helmet ? "-helmet" : ""}`;
       const canvas = document.createElement("canvas");
       canvas.width = 108;
