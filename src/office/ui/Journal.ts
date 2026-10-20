@@ -1,3 +1,4 @@
+import { evidenceLabels } from "../systems/challengeModel";
 import {
   ProgressStore,
   SITE_OBJECTIVES,
@@ -9,6 +10,8 @@ export const itemDescriptions: Record<string, string> = {
   品質查驗紀錄: "材料、查驗表與核定圖說的核對紀錄，已交給品管人員追蹤。",
   第一天實習紀念章:
     "辦公室與施工現場的四組工作都已完成，謝謝你認真觀察並回報。",
+  施工溝通評核紀錄:
+    "施工挑戰的行動與對話評核。可在手冊的評核頁查看配分、得失分原因及練習紀錄。",
   識別證: "HR 核發的實習識別證。從今天起，你也是團隊的一份子。",
   安全帽: "進入現場的基本防護用品；仍需接受現場安全告知與帶領。",
   實習手冊: "記錄自己的觀察與疑問，不必把所有名詞背下來。",
@@ -53,6 +56,7 @@ export class Journal {
   }
   render() {
     const s = this.store.state;
+    document.querySelector("#restart")!.textContent=this.tab==='review'?'重開整段故事':'重新開始';
     document
       .querySelectorAll<HTMLButtonElement>("[data-tab]")
       .forEach((b) =>
@@ -110,6 +114,17 @@ export class Journal {
         "帶著發現回來交流",
         "規劃任務回報後，回到 HR 室找雅涵，領取辦公室見習章。",
       );
+      if (s.planning === "complete")
+        this.entry(
+          content,
+          s.challenge.status === "complete"
+            ? "已交件"
+            : s.challenge.status === "active"
+              ? "挑戰中"
+              : "可接取",
+          "加值挑戰・澆置前的三方溝通",
+          "在施工現場找鋼筋吳師傅接取，再與模板周師傅核對，帶著現場依據向林學長回報。結果記錄在「評核」頁。",
+        );
       if (s.planning === "complete") {
         const names = {
           construction: "施工組・結構施工觀察",
@@ -175,6 +190,8 @@ export class Journal {
           item,
           itemDescriptions[item] || "實習途中取得的紀錄。",
         );
+    } else if (this.tab === "review") {
+      this.renderReview(content);
     } else {
       content.innerHTML = `<p class="map-heading">辦公區・一樓導覽</p><svg class="office-map" viewBox="0 0 320 345" role="img" aria-label="辦公區地圖，左上 HR 室、右上規劃室、中間走道、左下休息區、右下事務區、最下方集合區"><rect x="5" y="5" width="310" height="332" fill="#d3ded1" stroke="#536f76" stroke-width="3"/><g fill="#b3c8bd" stroke="#819d96"><rect x="12" y="20" width="116" height="108"/><rect x="192" y="20" width="116" height="139"/><rect x="12" y="142" width="116" height="112"/><rect x="192" y="173" width="116" height="81"/></g><g font-family="sans-serif" fill="#456b70" font-size="13" text-anchor="middle"><text x="70" y="80">HR 室</text><text x="249" y="86">規劃室 ◇</text><text x="70" y="205">休息區</text><text x="250" y="218">事務區</text><text x="160" y="299">入口集合區</text><text x="160" y="167" font-size="10">走道</text></g><path d="M128 86H142M178 86H192M128 209H142M178 198H192" stroke="#faf3d8" stroke-width="9"/><circle cx="${(s.x / 1024) * 320}" cy="${(s.y / 1088) * 345}" r="5" fill="#c17e60" stroke="#fff5db" stroke-width="2"/><path d="M148 334h24" stroke="#6d8d91" stroke-width="5"/></svg><p class="map-note">● 你的位置　◇ 規劃任務 NPC<br>房間入口連接中央走道，地圖可自由探索。<br>完成報到與規劃回報後，南側通道可前往工地。</p>`;
     }
@@ -184,6 +201,102 @@ export class Journal {
       .storageAvailable
       ? "✓ 已保存於目前瀏覽器"
       : "目前無法存檔，請勿關閉分頁";
+  }
+  openReview() {
+    this.tab = "review";
+    this.render();
+    if (!this.root.open) this.root.showModal();
+  }
+  private renderReview(content: Element) {
+    const c = this.store.state.challenge;
+    const heading = document.createElement("p");
+    heading.className = "bag-heading";
+    heading.textContent = "施工挑戰・澆置前的三方溝通";
+    content.append(heading);
+    if (c.status !== "complete") {
+      this.entry(
+        content,
+        c.status === "active" ? "挑戰進行中" : "可接取",
+        "先找到工班師傅，再整理回報",
+        c.status === "active"
+          ? "三項現場依據、鋼筋吳師傅的現況、模板周師傅的處置確認，最後向林學長交件。可以先補查，不必急著提交。"
+          : "接取施工觀察任務後，到鋼筋區旁找吳師傅開始挑戰。與師傅的選項會改變對話與現場標示。",
+      );
+      if (c.status === "active") {
+        for (const [id, label] of Object.entries(evidenceLabels))
+          this.entry(
+            content,
+            c.evidence.includes(id as keyof typeof evidenceLabels)
+              ? "已記錄"
+              : "待調查",
+            label,
+            "需要實際走到現場調查，同一依據只計一次。",
+          );
+        this.entry(
+          content,
+          "三方確認",
+          "工班溝通進度",
+          `吳師傅：${c.wu === "none" ? "尚未核對" : c.wu === "force" && !c.wuRepaired ? "尚需補問現況" : "已核對"}。周師傅：${c.chen === "none" ? "尚未核對" : c.chen === "rush" && !c.chenCorrected ? "尚需修正建議" : "已確認待處理事項"}。`,
+        );
+      }
+      this.entry(
+        content,
+        "評分依據",
+        "觀察 30・判斷 30・安全 25・溝通 15",
+        "不以速度計分。若先提出不完整建議，仍能補問與修正；紀錄會說明本次保留的扣分原因。",
+      );
+    } else {
+      const result = c.history[c.history.length - 1];
+      if (result) {
+        const score = document.createElement("div");
+        score.className = "review-score";
+        const num = document.createElement("strong");
+        num.textContent = result.total + " / 100";
+        const grade = document.createElement("span");
+        grade.textContent =
+          result.grade + " · 第 " + result.attempt + " 次練習";
+        score.append(num, grade);
+        content.append(score);
+        for (const card of result.cards) {
+          const row = document.createElement("article");
+          row.className = "review-card";
+          const h = document.createElement("h3");
+          const name = document.createElement("span");
+          name.textContent = card.name;
+          const points = document.createElement("b");
+          points.textContent = card.points + " / " + card.max;
+          h.append(name, points);
+          const meter = document.createElement("meter");
+          meter.max = card.max;
+          meter.value = card.points;
+          meter.setAttribute("aria-label", card.name);
+          const reason = document.createElement("p");
+          reason.textContent = card.reason;
+          row.append(h, meter, reason);
+          content.append(row);
+        }
+        this.entry(
+          content,
+          "林學長的回饋",
+          "下一次，怎麼做得更好",
+          result.feedback,
+        );
+        this.entry(
+          content,
+          "可重新挑戰",
+          "回到鋼筋區找吳師傅",
+          "新的一次練習會重新記錄挑戰依據與對話，保留最近五次評核。原本的實習任務、背包與兩區域進度不會被清除。",
+        );
+      }
+    }
+    if (c.history.length) {
+      const history = document.createElement("p");
+      history.className = "review-history";
+      history.textContent =
+        "最近練習紀錄：" +
+        c.history.map((r) => `第 ${r.attempt} 次 ${r.total} 分`).join(" / ");
+      content.append(history);
+    }
   }
   private entry(parent: Element, status: string, title: string, text: string) {
     const box = document.createElement("article");

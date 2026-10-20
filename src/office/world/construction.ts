@@ -2,8 +2,18 @@ import Phaser from "phaser";
 import { fixtures, zones } from "../../world/site";
 import { makeArt } from "../../art/atlas";
 import type { Rect } from "./data";
-export const sitePeople = [
+import type { Look } from "../art/people";
+export const sitePeople: {
+  id: string;
+  x: number;
+  y: number;
+  name: string;
+  role: string;
+  look: Look;
+  main: boolean;
+}[] = [
   {
+    main: true,
     id: "construction",
     x: 384,
     y: 544,
@@ -12,6 +22,7 @@ export const sitePeople = [
     look: "planner" as const,
   },
   {
+    main: true,
     id: "safety",
     x: 576,
     y: 736,
@@ -20,14 +31,44 @@ export const sitePeople = [
     look: "colleague" as const,
   },
   {
+    main: true,
     id: "quality-npc",
-    x: 1088,
-    y: 256,
+    x: 1152,
+    y: 288,
     name: "許學姐",
     role: "品管工程師",
     look: "hr" as const,
   },
 ];
+sitePeople.push(
+  {
+    id: "master-wu",
+    x: 384,
+    y: 448,
+    name: "吳師傅",
+    role: "鋼筋工班班長",
+    look: "steelworker",
+    main: false,
+  },
+  {
+    id: "master-zhou",
+    x: 1120,
+    y: 456,
+    name: "周師傅",
+    role: "模板工班班長",
+    look: "formworker",
+    main: false,
+  },
+  {
+    id: "logistics",
+    x: 1152,
+    y: 720,
+    name: "小許",
+    role: "材料與文件聯絡員",
+    look: "logistics",
+    main: false,
+  },
+);
 export const siteTargets = fixtures
   .filter((f) => f.label)
   .map((f) => ({

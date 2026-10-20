@@ -1,3 +1,11 @@
+import {
+  freshChallenge,
+  validChallenge,
+  assess,
+  verifiedReady,
+  type ChallengeState,
+  type ChallengeEvidence,
+} from "./challengeModel";
 export type EvidenceId = "blueprint" | "computer" | "model";
 export type PlanningStatus =
   "locked" | "available" | "active" | "ready" | "complete";
@@ -8,6 +16,7 @@ export const SITE_OBJECTIVES: Record<SiteJob, string[]> = {
   quality: ["quality", "pipe1", "bim"],
 };
 export type Progress = {
+  challenge: ChallengeState;
   location: "office" | "site";
   siteTasks: Record<SiteJob, PlanningStatus>;
   siteSeen: string[];
@@ -27,6 +36,7 @@ export const evidenceIds: EvidenceId[] = ["blueprint", "computer", "model"];
 export function fresh(name = ""): Progress {
   return {
     version: 2,
+    challenge: freshChallenge(),
     location: "office",
     siteTasks: {
       construction: "available",
@@ -108,6 +118,8 @@ export function loadProgress(): Progress | null {
       !Object.values(s.siteTasks).every((v) => v === "complete")
     )
       return null;
+    s.challenge ??= freshChallenge();
+    if (!validChallenge(s.challenge)) s.challenge = freshChallenge();
     return s;
   } catch {
     return null;
@@ -209,6 +221,63 @@ export class ProgressStore {
     this.state.items.push("第一天實習紀念章");
     this.commit();
     this.onNotice("第一天實習完成 · 謝謝你帶著好奇走進現場");
+  }
+  startChallenge() {
+    if (
+      this.state.location !== "site" ||
+      !this.state.hr ||
+      this.state.planning !== "complete" ||
+      this.state.siteTasks.construction === "available" ||
+      this.state.challenge.status === "active"
+    )
+      return;
+    const old = this.state.challenge;
+    this.state.challenge = {
+      ...freshChallenge(),
+      status: "active",
+      attempt: old.attempt + 1,
+      history: old.history,
+    };
+    this.commit();
+    this.onNotice("挑戰開始 · 澆置前的三方溝通");
+  }
+  observeChallenge(id: ChallengeEvidence) {
+    const c = this.state.challenge;
+    if (c.status !== "active" || c.evidence.includes(id)) return;
+    c.evidence.push(id);
+    this.commit();
+    this.onNotice("挑戰依據已記錄 · " + c.evidence.length + "/3");
+  }
+  challengeWu(mode: "ask" | "assist" | "force") {
+    const c = this.state.challenge;
+    if (c.status !== "active") return;
+    if (c.wu === "none") c.wu = mode;
+    else if (c.wu === "force" && mode !== "force") c.wuRepaired = true;
+    this.commit();
+  }
+  challengeChen(mode: "hold" | "review" | "rush") {
+    const c = this.state.challenge;
+    if (c.status !== "active") return;
+    if (c.chen === "none") c.chen = mode;
+    else if (c.chen === "rush" && mode !== "rush") c.chenCorrected = true;
+    this.commit();
+  }
+  challengeLogistics() {
+    if (this.state.challenge.status !== "active") return;
+    this.state.challenge.logistics = true;
+    this.commit();
+  }
+  submitChallenge(report: "verified" | "partial" | "assume") {
+    const c = this.state.challenge;
+    if (c.status !== "active" || (report === "verified" && !verifiedReady(c)))
+      return;
+    c.report = report;
+    c.status = "complete";
+    c.history = [...c.history, assess(c)].slice(-5);
+    if (!this.state.items.includes("施工溝通評核紀錄"))
+      this.state.items.push("施工溝通評核紀錄");
+    this.commit();
+    this.onNotice("施工挑戰完成 · 在手冊的「評核」查看結果");
   }
   commit() {
     try {

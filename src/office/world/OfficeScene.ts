@@ -3,6 +3,8 @@ import { makeOfficeArt } from "../art/officeArt";
 import { makePeople } from "../art/people";
 import { P } from "../art/palette";
 import { buildConstruction, sitePeople, siteTargets } from "./construction";
+import { ChallengeStory } from "../systems/challengeStory";
+import { ChallengeWorld } from "./challengeWorld";
 import { SiteStory } from "../systems/siteStory";
 import { SITE_OBJECTIVES, type SiteJob } from "../systems/progress";
 import {
@@ -32,6 +34,13 @@ export class OfficeScene extends Phaser.Scene {
   private audio = new OfficeAudio();
   private journal = new Journal(this.store);
   private siteStory = new SiteStory(this.store, this.dialogue);
+  private challengeStory = new ChallengeStory(
+    this.store,
+    this.dialogue,
+    () => this.journal.openReview(),
+    () => this.siteStory.talk("construction"),
+  );
+  private challengeWorld?: ChallengeWorld;
   private activeTargets = targets;
   private worldCollider?: Phaser.Physics.Arcade.Collider;
   private solids?: Phaser.Physics.Arcade.StaticGroup;
@@ -80,6 +89,7 @@ export class OfficeScene extends Phaser.Scene {
         area: this.region().id,
         location: this.store.state.location,
         state: JSON.parse(JSON.stringify(this.store.state)),
+        worldFeedback: this.challengeWorld?.messages() || [],
         blocked: this.blocked(),
         markers: [...this.markers]
           .filter(([, m]) => m.visible)
@@ -99,6 +109,7 @@ export class OfficeScene extends Phaser.Scene {
     });
   }
   private loadWorld(location: "office" | "site") {
+    this.challengeWorld = undefined;
     this.worldCollider?.destroy();
     this.solids?.destroy(true);
     this.tweens.killAll();
@@ -167,20 +178,23 @@ export class OfficeScene extends Phaser.Scene {
         })
         .setOrigin(0.5)
         .setDepth(n.y + 90);
-      const marker = this.add
-        .container(n.x, n.y - 75, [
-          this.add.triangle(0, 0, 0, 0, 10, 0, 5, 8, 0xd36b69).setOrigin(0.5),
-        ])
-        .setDepth(n.y + 95);
-      this.markers.set(n.id, marker);
-      this.tweens.add({
-        targets: marker,
-        y: n.y - 79,
-        duration: 800,
-        yoyo: true,
-        repeat: -1,
-      });
+      if (n.main) {
+        const marker = this.add
+          .container(n.x, n.y - 75, [
+            this.add.triangle(0, 0, 0, 0, 10, 0, 5, 8, 0xd36b69).setOrigin(0.5),
+          ])
+          .setDepth(n.y + 95);
+        this.markers.set(n.id, marker);
+        this.tweens.add({
+          targets: marker,
+          y: n.y - 79,
+          duration: 800,
+          yoyo: true,
+          repeat: -1,
+        });
+      }
     }
+    this.challengeWorld = new ChallengeWorld(this);
     for (const id of Object.values(SITE_OBJECTIVES).flat()) {
       const target = this.activeTargets.find((t) => t.id === id)!;
       const badge = this.badge(target.x, target.y - 83, "!", 0xd4b980);
@@ -662,6 +676,8 @@ export class OfficeScene extends Phaser.Scene {
         );
         return;
       }
+      if (this.challengeStory.talk(id)) return;
+      if (this.challengeStory.observe(id)) return;
       if (sitePeople.some((n) => n.id === id)) {
         this.siteStory.talk(id);
         return;
@@ -858,17 +874,39 @@ export class OfficeScene extends Phaser.Scene {
       document.querySelector("#quest-count")!.textContent =
         `${Object.values(s.siteTasks).filter((v) => v === "complete").length}/3`;
     }
+    if (s.challenge.status === "active") {
+      document.querySelector("#quest-label")!.textContent =
+        "施工挑戰・三方溝通";
+      document.querySelector("#quest-text")!.textContent =
+        s.location === "site"
+          ? "調查三項依據，和吳師傅、周師傅核對，再向林學長回報"
+          : "挑戰進度已保留・從南側通道返回施工現場";
+      document.querySelector("#quest-count")!.textContent =
+        s.challenge.evidence.length + "/3";
+    }
     this.refreshMarkers();
   }
   private refreshMarkers() {
+    this.challengeWorld?.update(this.store.state.challenge);
     if (this.store.state.location === "site") {
       for (const job of Object.keys(SITE_OBJECTIVES) as SiteJob[])
         for (const id of SITE_OBJECTIVES[job])
           this.markers
             .get(id)
             ?.setVisible(
-              this.store.state.siteTasks[job] === "active" &&
-                !this.store.state.siteSeen.includes(id),
+              (this.store.state.siteTasks[job] === "active" &&
+                !this.store.state.siteSeen.includes(id)) ||
+                (this.store.state.challenge.status === "active" &&
+                  ["bim", "rebar", "scaffold"].includes(id) &&
+                  !this.store.state.challenge.evidence.includes(
+                    (
+                      {
+                        bim: "drawing",
+                        rebar: "component",
+                        scaffold: "support",
+                      } as const
+                    )[id as "bim" | "rebar" | "scaffold"],
+                  )),
             );
       return;
     }

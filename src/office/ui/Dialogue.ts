@@ -1,5 +1,12 @@
 import { paintPortrait, type Look } from "../art/people";
-export type Line = { title: string; text: string };
+export type DialogueChoice = {
+  id: string;
+  label: string;
+  detail?: string;
+  disabledReason?: string;
+  select: () => void;
+};
+export type Line = { title: string; text: string; choices?: DialogueChoice[] };
 export class OfficeDialogue {
   private root = document.querySelector<HTMLDialogElement>("#dialogue")!;
   private lines: Line[] = [];
@@ -37,18 +44,45 @@ export class OfficeDialogue {
     (document.querySelector("#defer") as HTMLButtonElement).hidden =
       !options.defer;
     this.render();
-    this.root.showModal();
+    if (!this.root.open) this.root.showModal();
   }
   private render() {
     const line = this.lines[this.index];
     document.querySelector("#dialog-title")!.textContent = line.title;
     document.querySelector("#dialog-text")!.textContent = line.text;
+    const choices = document.querySelector("#dialog-choices")!;
+    choices.replaceChildren();
+    (document.querySelector("#next") as HTMLButtonElement).hidden =
+      !!line.choices?.length;
+    if (line.choices?.length)
+      (document.querySelector("#defer") as HTMLButtonElement).hidden = true;
+    for (const choice of line.choices || []) {
+      const button = document.createElement("button");
+      button.dataset.choice = choice.id;
+      button.className = "dialogue-choice";
+      button.disabled = !!choice.disabledReason;
+      const title = document.createElement("strong");
+      title.textContent = choice.label;
+      button.append(title);
+      if (choice.detail || choice.disabledReason) {
+        const detail = document.createElement("small");
+        detail.textContent = choice.disabledReason || choice.detail!;
+        button.append(detail);
+      }
+      button.addEventListener("click", () => {
+        this.root.close();
+        choice.select();
+      });
+      choices.append(button);
+    }
+
     document.querySelector("#page-number")!.textContent =
       `${String(this.index + 1).padStart(2, "0")} / ${String(this.lines.length).padStart(2, "0")}`;
     document.querySelector("#next")!.textContent =
       this.index === this.lines.length - 1 ? this.endLabel : "繼續 →";
   }
   private next() {
+    if (this.lines[this.index]?.choices?.length) return;
     if (++this.index < this.lines.length) this.render();
     else {
       this.root.close();

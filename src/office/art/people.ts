@@ -1,7 +1,14 @@
 import Phaser from "phaser";
 import { painter, type Painter } from "./officeArt";
 import { P } from "./palette";
-export type Look = "intern" | "hr" | "planner" | "colleague";
+export type Look =
+  | "intern"
+  | "hr"
+  | "planner"
+  | "colleague"
+  | "steelworker"
+  | "formworker"
+  | "logistics";
 const styles: Record<
   Look,
   {
@@ -12,6 +19,27 @@ const styles: Record<
     trousers: string;
   }
 > = {
+  steelworker: {
+    hair: "#393e45",
+    light: "#737d78",
+    shirt: "#aa9b76",
+    shade: "#777a67",
+    trousers: "#435b6c",
+  },
+  formworker: {
+    hair: "#62564d",
+    light: "#a1967d",
+    shirt: "#7d9da1",
+    shade: "#506d7b",
+    trousers: "#435767",
+  },
+  logistics: {
+    hair: "#4b535c",
+    light: "#879499",
+    shirt: "#b0b98b",
+    shade: "#708b79",
+    trousers: "#567184",
+  },
   intern: {
     hair: "#46545a",
     light: "#718080",
@@ -127,6 +155,16 @@ function character(
     p.r(17, 30, 4, 1, P.blue);
     p.r(14, 23, 2, 1, P.paper);
     p.r(22, 23, 2, 1, P.paper);
+  }
+  if (["steelworker", "formworker", "logistics"].includes(look)) {
+    p.r(11, 23, 3, 11, P.paper);
+    p.r(23, 23, 3, 11, P.paper);
+    p.r(11, 30, 15, 2, P.light);
+    if (look !== "logistics") {
+      p.r(10, 34, 17, 2, P.woodDark);
+      p.r(26, 29, 4, 7, P.wood);
+      p.r(28, 26, 1, 4, P.steel);
+    }
   }
   if (helmet) {
     p.poly(
@@ -370,6 +408,32 @@ export function paintPortrait(canvas: HTMLCanvasElement, look: Look) {
     p.l(23, 42, 24, 67, s.light, 2);
     p.l(73, 43, 71, 65, s.light, 2);
     p.r(72, 52, 3, 4, P.paper);
+  }
+  if (["steelworker", "formworker", "logistics"].includes(look)) {
+    p.poly(
+      [
+        [20, 25],
+        [23, 12],
+        [31, 6],
+        [65, 6],
+        [75, 13],
+        [78, 26],
+      ],
+      P.white,
+    );
+    p.r(17, 26, 64, 6, P.light);
+    p.r(44, 4, 6, 21, "#f3eed6");
+    p.r(27, 11, 5, 12, "#c6d4c7");
+    p.r(22, 93, 5, 19, P.paper);
+    p.r(70, 93, 5, 19, P.paper);
+    if (look === "steelworker") {
+      p.r(41, 59, 17, 2, s.hair);
+      p.r(45, 61, 9, 1, s.hair);
+    }
+    if (look === "formworker") {
+      p.l(31, 50, 34, 52, P.skinDark);
+      p.l(64, 50, 67, 52, P.skinDark);
+    }
   }
   p.l(34, 39, 43, 38, s.hair, 2);
   p.l(54, 38, 63, 39, s.hair, 2);
